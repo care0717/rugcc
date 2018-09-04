@@ -1,2 +1,5 @@
 # rugcc
-c compiler made by rust
+C compiler made by Rust
+
+## refarence
+https://github.com/rui314/9cc

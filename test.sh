@@ -21,6 +21,7 @@ runtest 128 128
 runtest '5+20-4' 21
 runtest ' 12 +  34 - 5 ' 41
 runtest '1+2+3+4+5+6+7' 28
+runtest '2*3' 6
 
 
 echo "OK"

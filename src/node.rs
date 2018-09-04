@@ -69,6 +69,12 @@ pub fn gen<'a>(node: Node, mut regs: &mut Vec<&'a str>) -> &'a str {
                     print!("\tsub {}, {}\n", dst, src);
                     return dst;
                 },
+                '*' => {
+                    print!("\tmov rax, {}\n", src);
+                    print!("\tmul {}\n", dst);
+                    print!("\tmov {}, rax\n", dst);
+                    return dst
+                }
                 _ => {
                     error("unknown operator", None);
                     return "error"
