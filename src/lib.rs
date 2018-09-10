@@ -2,7 +2,7 @@
 pub mod common {
     use std;
 
-    #[derive(PartialEq)]
+    #[derive(PartialEq, Debug)]
     pub enum TY {
         Num,
         Ope(char),
