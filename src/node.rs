@@ -169,6 +169,12 @@ pub fn gen_x86(regs: Vec<&str>, ins: Vec<IR>) {
                         print!("\tmul {}\n", regs[ir.lhs]);
                         print!("\tmov {}, rax\n", regs[ir.lhs]);
                     }
+                    '/' => {
+                        print!("\tmov rax, {}\n", regs[ir.lhs]);
+                        print!("\tcqo\n");
+                        print!("\tdiv {}\n", regs[ir.rhs]);
+                        print!("\tmov {}, rax\n", regs[ir.lhs]);
+                    }
                     _ => assert!(true),
                 }
             }
