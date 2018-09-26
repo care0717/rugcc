@@ -3,29 +3,43 @@ pub mod common {
     use std;
 
     #[derive(PartialEq, Debug)]
-    pub enum TY {
-        Num,
-        Ope(char),
+    pub enum TK {
+        NUM,
+        OPE(char),
         EOF,
+        RETURN,
+        END_LINE,
     }
+
+    #[derive(Debug)]
     pub struct Token {
-        pub ty: TY,
+        pub ty: TK,
         pub val: String,
     }
 
+    #[derive(PartialEq, Debug)]
+    pub enum ND {
+        NUM,
+        OPE(char),
+        RETURN,
+        COMP_STMT,
+        EXPR_STMT,
+    }
 
     #[derive(Debug)]
     pub struct Node {
-        pub ty: TY,
+        pub ty: ND,
         pub lhs: Option<Box<Node>>,
         pub rhs: Option<Box<Node>>,
         pub val: String,
+        pub expr: Option<Box<Node>>,
+        pub stmts: Vec<Node>
     }
 
     impl Node {
         pub fn get_ope(&self) -> char {
             match self.ty {
-                TY::Ope(c) => return c,
+                ND::OPE(c) => return c,
                 _ => {
                     assert!(true);
                     return 'a'

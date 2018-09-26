@@ -1,8 +1,7 @@
 extern crate rugcc;
-use self::rugcc::common::{TY, Token};
+use self::rugcc::common::{TK, Token, error};
 
 use std::process;
-
 
 pub fn tokenize(s: Vec<char>) -> Vec<Token>{
     let mut counter: usize = 0;
@@ -15,7 +14,27 @@ pub fn tokenize(s: Vec<char>) -> Vec<Token>{
             continue;
         }
         if c=='+' || c=='-' || c=='*' || c=='/' {
-            tokens.push(Token{ty: TY::Ope(c), val: c.to_string()});
+            tokens.push(Token{ty: TK::OPE(c), val: c.to_string()});
+            counter += 1;
+            continue;
+        }
+        if c==';' {
+            tokens.push(Token{ty: TK::END_LINE, val: c.to_string()});
+            counter += 1;
+            continue;
+        }
+        if c.is_alphabetic() || c=='_' {
+            let mut name = Vec::new();
+            name.push(c);
+            counter += 1;
+            while s[counter].is_alphabetic() || s[counter].is_digit(10) || s[counter] == '_' {
+                name.push(s[counter]);
+                counter += 1;
+            }
+            match  name.iter().collect::<String>().as_str()  {
+                "return" => tokens.push(Token{ty: TK::RETURN, val: name.iter().collect()}),
+                _ => error("unknown identifier: ", Some(&name.iter().collect::<String>())),
+            }
             counter += 1;
             continue;
         }
@@ -25,13 +44,13 @@ pub fn tokenize(s: Vec<char>) -> Vec<Token>{
                 tmp += &s[counter].to_string();
                 counter += 1;
             }
-            tokens.push(Token{ty: TY::Num, val: tmp});
+            tokens.push(Token{ty: TK::NUM, val: tmp});
             continue;
         }
         print!("cannot tokenize: {}\n", c);
         process::exit(1);
     }
-    tokens.push(Token{ty: TY::EOF, val: "EOF".to_string()});
+    tokens.push(Token{ty: TK::EOF, val: "EOF".to_string()});
     tokens.reverse();
     return tokens
 }
