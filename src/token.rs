@@ -1,5 +1,5 @@
 extern crate rugcc;
-use self::rugcc::common::{TK, Token, error};
+use self::rugcc::common::{TK, Token};
 
 use std::process;
 
@@ -13,7 +13,7 @@ pub fn tokenize(s: Vec<char>) -> Vec<Token>{
             counter += 1;
             continue;
         }
-        if c=='+' || c=='-' || c=='*' || c=='/' {
+        if c=='+' || c=='-' || c=='*' || c=='/' || c=='=' {
             tokens.push(Token{ty: TK::OPE(c), val: c.to_string()});
             counter += 1;
             continue;
@@ -33,9 +33,8 @@ pub fn tokenize(s: Vec<char>) -> Vec<Token>{
             }
             match  name.iter().collect::<String>().as_str()  {
                 "return" => tokens.push(Token{ty: TK::RETURN, val: name.iter().collect()}),
-                _ => error("unknown identifier: ", Some(&name.iter().collect::<String>())),
+                _ => tokens.push(Token{ty: TK::IDENT, val: name.iter().collect()}),
             }
-            counter += 1;
             continue;
         }
         if c.is_digit(10){

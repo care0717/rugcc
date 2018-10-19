@@ -36,10 +36,10 @@ pub fn alloc_regs(regs: &mut Vec<&str>, ins: &mut Vec<IR>) {
     for i in 0..ins.len() {
         let ir = ins[i].clone();
         match ir.op {
-            IRType::IMN | IRType::RETURN => {
+            IRType::IMN | IRType::RETURN | IRType::ALLOCA => {
                 ins[i].lhs = alloc(ir.lhs, &mut reg_map, regs, &mut used);
             },
-            IRType::MOV | IRType::Ope(_) => {
+            IRType::MOV | IRType::Ope(_) | IRType::LOAD | IRType::STORE => {
                 ins[i].lhs = alloc(ir.lhs, &mut reg_map, regs, &mut used);
                 ins[i].rhs = alloc(ir.rhs, &mut reg_map, regs, &mut used);
             },
@@ -53,14 +53,21 @@ pub fn alloc_regs(regs: &mut Vec<&str>, ins: &mut Vec<IR>) {
 }
 
 pub fn gen_x86(regs: Vec<&str>, ins: Vec<IR>) {
+    let ret = ".L1";
+    print!("\tpush rbp\n");
+    print!("\tmov rbp, rsp\n");
+
     for ir in ins {
         match ir.op {
             IRType::IMN => {
                 print!("\tmov {}, {}\n", regs[ir.lhs], ir.rhs);
             },
+            IRType::MOV => {
+                print!("\tmov {}, {}\n", regs[ir.lhs], regs[ir.rhs]);
+            },
             IRType::RETURN => {
                 print!("\tmov rax, {}\n", regs[ir.lhs]);
-                print!("\tret\n");
+                print!("\tjmp {}\n", ret);
             },
             IRType::Ope(o) => {
                 match o {
@@ -79,9 +86,28 @@ pub fn gen_x86(regs: Vec<&str>, ins: Vec<IR>) {
                     }
                     _ => assert!(true),
                 }
-            }
+            },
+            IRType::ALLOCA => {
+                if ir.rhs != 0 {
+                    print!("\tsub rsp, {}\n", ir.rhs);
+                    print!("\tmov {}, rsp\n", regs[ir.lhs]);
+                }
+            },
+            IRType::LOAD => {
+                print!("\tmov {}, [{}]\n", regs[ir.lhs], regs[ir.rhs]);
+            },
+            IRType::STORE => {
+                print!("\tmov [{}], {}\n", regs[ir.lhs], regs[ir.rhs]);
+            },
             IRType::NOP => {},
             _ => assert!(true),
         }
     }
+
+    print!("{}:\n", ret);
+    print!("\tmov rsp, rbp\n");
+    print!("\tmov rsp, rbp\n");
+    print!("\tpop rbp\n");
+    print!("\tret\n");
+
 }

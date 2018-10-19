@@ -2,16 +2,17 @@
 pub mod common {
     use std;
 
-    #[derive(PartialEq, Debug)]
+    #[derive(PartialEq, Debug, Clone)]
     pub enum TK {
         NUM,
         OPE(char),
         EOF,
         RETURN,
+        IDENT,
         END_LINE,
     }
 
-    #[derive(Debug)]
+    #[derive(Debug, Clone)]
     pub struct Token {
         pub ty: TK,
         pub val: String,
@@ -21,6 +22,7 @@ pub mod common {
     pub enum ND {
         NUM,
         OPE(char),
+        IDENT,
         RETURN,
         COMP_STMT,
         EXPR_STMT,
@@ -52,6 +54,9 @@ pub mod common {
     pub enum IRType {
         IMN,
         MOV,
+        ALLOCA,
+        LOAD,
+        STORE,
         RETURN,
         KILL,
         NOP,
