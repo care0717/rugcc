@@ -41,7 +41,7 @@ pub fn alloc_regs(regs: &mut Vec<&str>, ins: &mut Vec<IR>) {
             },
             IRType::MOV | IRType::Ope(_) | IRType::LOAD | IRType::STORE => {
                 ins[i].lhs = alloc(ir.lhs, &mut reg_map, regs, &mut used);
-                ins[i].rhs = alloc(ir.rhs, &mut reg_map, regs, &mut used);
+                if !ir.has_imm {ins[i].rhs = alloc(ir.rhs, &mut reg_map, regs, &mut used);}
             },
             IRType::KILL => {
                 kill(reg_map[ir.lhs] as usize, &mut used);
@@ -71,7 +71,13 @@ pub fn gen_x86(regs: Vec<&str>, ins: Vec<IR>) {
             },
             IRType::Ope(o) => {
                 match o {
-                    '+' => print!("\tadd {}, {}\n", regs[ir.lhs], regs[ir.rhs]),
+                    '+' => {
+                        if ir.has_imm {
+                            print!("\tadd {}, {}\n", regs[ir.lhs], ir.imm)
+                        } else {
+                            print!("\tadd {}, {}\n", regs[ir.lhs], regs[ir.rhs])
+                        }
+                    },
                     '-' => print!("\tsub {}, {}\n", regs[ir.lhs], regs[ir.rhs]),
                     '*' => {
                         print!("\tmov rax, {}\n", regs[ir.rhs]);

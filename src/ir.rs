@@ -4,7 +4,10 @@ use self::rugcc::common::{IR, ND, Node, IRType, error};
 use std::collections::HashMap;
 
 fn add(op: IRType, lhs: usize, rhs: usize, code: &mut Vec<IR>) {
-    code.push(IR{op, lhs, rhs});
+    code.push(IR{op, lhs, rhs, has_imm: false, imm: 0});
+}
+fn add_imm(op: IRType, lhs: usize, imm: usize, code: &mut Vec<IR>) {
+    code.push(IR{op, lhs, rhs: 0, has_imm: true, imm});
 }
 
 fn gen_lval(node: Node, regno: &mut usize, code: &mut Vec<IR>, vars: &mut HashMap<String, usize>, bpoff: &mut usize) -> usize {
@@ -18,15 +21,11 @@ fn gen_lval(node: Node, regno: &mut usize, code: &mut Vec<IR>, vars: &mut HashMa
     } else {
         *vars.get(&node.val.to_string()).unwrap()
     };
-    let r1 = *regno;
+    let r = *regno;
     *regno += 1;
-    add(IRType::MOV, r1, 0, code);
-    let r2 = *regno;
-    *regno += 1;
-    add(IRType::IMN, r2, off, code);
-    add(IRType::Ope('+'), r1, r2, code);
-    add(IRType::KILL, r2, 0, code);
-    return r1;
+    add(IRType::MOV, r, 0, code);
+    add_imm(IRType::Ope('+'), r, off, code);
+    return r;
 }
 
 fn gen_expr(node: Node, regno: &mut usize, code: &mut Vec<IR>, vars: &mut HashMap<String, usize>, bpoff: &mut usize) -> usize {
@@ -83,7 +82,7 @@ pub fn gen_ir(node: Node) -> Vec<IR> {
     let mut vars = HashMap::new();
     let mut bpoff = 0;
     gen_stmt(node, &mut regno, &mut code, &mut vars, &mut bpoff);
-    code.insert(0, IR{op: IRType::ALLOCA,lhs: 0, rhs: bpoff});
+    code.insert(0, IR{op: IRType::ALLOCA,lhs: 0, rhs: bpoff, imm: 0, has_imm: false});
     add(IRType::KILL, 0, 0, &mut code);
     return code
 }
