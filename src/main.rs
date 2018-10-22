@@ -2,6 +2,7 @@ mod node;
 mod token;
 mod ir;
 mod regalloc;
+mod codegen;
 
 fn main() {
     let mut s = String::new();
@@ -18,5 +19,5 @@ fn main() {
     print!(".intel_syntax noprefix\n");
     print!(".global _main\n");
     print!("_main:\n");
-    regalloc::gen_x86(regs, ins);
+    codegen::gen_x86(regs, ins);
 }
