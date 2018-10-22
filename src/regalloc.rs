@@ -36,12 +36,12 @@ pub fn alloc_regs(regs: &mut Vec<&str>, ins: &mut Vec<IR>) {
     for i in 0..ins.len() {
         let ir = ins[i].clone();
         match ir.op {
-            IRType::IMN | IRType::RETURN | IRType::ALLOCA => {
+            IRType::IMN | IRType::ADD_IMN | IRType::RETURN | IRType::ALLOCA => {
                 ins[i].lhs = alloc(ir.lhs, &mut reg_map, regs, &mut used);
             },
             IRType::MOV | IRType::Ope(_) | IRType::LOAD | IRType::STORE => {
                 ins[i].lhs = alloc(ir.lhs, &mut reg_map, regs, &mut used);
-                if !ir.has_imm {ins[i].rhs = alloc(ir.rhs, &mut reg_map, regs, &mut used);}
+                ins[i].rhs = alloc(ir.rhs, &mut reg_map, regs, &mut used);
             },
             IRType::KILL => {
                 kill(reg_map[ir.lhs] as usize, &mut used);

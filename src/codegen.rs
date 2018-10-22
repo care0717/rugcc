@@ -14,19 +14,16 @@ pub fn gen_x86(regs: Vec<&str>, ins: Vec<IR>) {
             IRType::MOV => {
                 print!("\tmov {}, {}\n", regs[ir.lhs], regs[ir.rhs]);
             },
+            IRType::ADD_IMN => {
+                print!("\tadd {}, {}\n", regs[ir.lhs], ir.rhs);
+            },
             IRType::RETURN => {
                 print!("\tmov rax, {}\n", regs[ir.lhs]);
                 print!("\tjmp {}\n", ret);
             },
             IRType::Ope(o) => {
                 match o {
-                    '+' => {
-                        if ir.has_imm {
-                            print!("\tadd {}, {}\n", regs[ir.lhs], ir.imm)
-                        } else {
-                            print!("\tadd {}, {}\n", regs[ir.lhs], regs[ir.rhs])
-                        }
-                    },
+                    '+' => print!("\tadd {}, {}\n", regs[ir.lhs], regs[ir.rhs]),
                     '-' => print!("\tsub {}, {}\n", regs[ir.lhs], regs[ir.rhs]),
                     '*' => {
                         print!("\tmov rax, {}\n", regs[ir.rhs]);

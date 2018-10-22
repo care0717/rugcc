@@ -53,6 +53,7 @@ pub mod common {
     #[derive(Clone, Debug)]
     pub enum IRType {
         IMN,
+        ADD_IMN,
         MOV,
         ALLOCA,
         LOAD,
@@ -68,8 +69,6 @@ pub mod common {
         pub op: IRType,
         pub lhs: usize,
         pub rhs: usize,
-        pub has_imm: bool,
-        pub imm: usize,
     }
 
     pub fn error(mes: &str, val: Option<&String>) {
