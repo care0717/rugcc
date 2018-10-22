@@ -1,12 +1,12 @@
 extern crate rugcc;
 use self::rugcc::common::{IR, IRType};
 
-pub fn gen_x86(regs: Vec<&str>, ins: Vec<IR>) {
+pub fn gen_x86(regs: Vec<&str>, irs: Vec<IR>) {
     let ret = ".Lend";
     print!("\tpush rbp\n");
     print!("\tmov rbp, rsp\n");
 
-    for ir in ins {
+    for ir in irs {
         match ir.op {
             IRType::IMN => {
                 print!("\tmov {}, {}\n", regs[ir.lhs], ir.rhs);
@@ -38,6 +38,11 @@ pub fn gen_x86(regs: Vec<&str>, ins: Vec<IR>) {
                     }
                     _ => assert!(true),
                 }
+            },
+            IRType::LABEL => print!(".L{}:\n", ir.lhs),
+            IRType::UNLESS => {
+                print!("\tcmp {}, 0\n", regs[ir.lhs]);
+                print!("\tje .L{}\n", ir.rhs);
             },
             IRType::ALLOCA => {
                 if ir.rhs != 0 {

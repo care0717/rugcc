@@ -1,5 +1,5 @@
 extern crate rugcc;
-use self::rugcc::common::{IR, error, IRType};
+use self::rugcc::common::{IR, error, IRType, IRInfoType};
 
 fn alloc(ir_reg: usize, reg_map: &mut Vec<i32>, regs: &Vec<&str>, used: &mut Vec<bool>) -> usize{
     if reg_map[ir_reg] != -1 {
@@ -24,7 +24,7 @@ fn kill(r: usize, used: &mut Vec<bool>)  {
     used[r] = false;
 }
 
-pub fn alloc_regs(regs: &mut Vec<&str>, ins: &mut Vec<IR>) {
+pub fn alloc_regs(regs: &mut Vec<&str>, irs: &mut Vec<IR>) {
     let mut reg_map = Vec::new();
     let mut used = Vec::new();
     for _i in 0..1000 {
@@ -33,21 +33,23 @@ pub fn alloc_regs(regs: &mut Vec<&str>, ins: &mut Vec<IR>) {
     for _i in 0..8 {
         used.push(false);
     }
-    for i in 0..ins.len() {
-        let ir = ins[i].clone();
-        match ir.op {
-            IRType::IMN | IRType::ADD_IMN | IRType::RETURN | IRType::ALLOCA => {
-                ins[i].lhs = alloc(ir.lhs, &mut reg_map, regs, &mut used);
+    for i in 0..irs.len() {
+        let ir = irs[i].clone();
+        let info = ir.get_irinfo();
+        match info.ty {
+            IRInfoType::REG | IRInfoType::REG_IMN | IRInfoType::REG_LABEL => {
+                irs[i].lhs = alloc(ir.lhs, &mut reg_map, regs, &mut used);
             },
-            IRType::MOV | IRType::Ope(_) | IRType::LOAD | IRType::STORE => {
-                ins[i].lhs = alloc(ir.lhs, &mut reg_map, regs, &mut used);
-                ins[i].rhs = alloc(ir.rhs, &mut reg_map, regs, &mut used);
+            IRInfoType::REG_REG  => {
+                irs[i].lhs = alloc(ir.lhs, &mut reg_map, regs, &mut used);
+                irs[i].rhs = alloc(ir.rhs, &mut reg_map, regs, &mut used);
             },
-            IRType::KILL => {
-                kill(reg_map[ir.lhs] as usize, &mut used);
-                ins[i].op = IRType::NOP;
-            },
-            _ =>  assert!(true),
+            _ => {}
         }
+        if ir.op == IRType::KILL {
+            kill(reg_map[ir.lhs] as usize, &mut used);
+            irs[i].op = IRType::NOP;
+        }
+
     }
 }

@@ -9,6 +9,7 @@ pub mod common {
         EOF,
         RETURN,
         IDENT,
+        IF,
         END_LINE,
     }
 
@@ -23,6 +24,7 @@ pub mod common {
         NUM,
         OPE(char),
         IDENT,
+        IF,
         RETURN,
         COMP_STMT,
         EXPR_STMT,
@@ -35,7 +37,9 @@ pub mod common {
         pub rhs: Option<Box<Node>>,
         pub val: String,
         pub expr: Option<Box<Node>>,
-        pub stmts: Vec<Node>
+        pub stmts: Vec<Node>,
+        pub cond: Option<Box<Node>>,
+        pub then: Option<Box<Node>>,
     }
 
     impl Node {
@@ -50,12 +54,14 @@ pub mod common {
         }
     }
 
-    #[derive(Clone, Debug)]
+    #[derive(Clone, Copy, Debug, PartialEq)]
     pub enum IRType {
         IMN,
         ADD_IMN,
         MOV,
         ALLOCA,
+        LABEL,
+        UNLESS,
         LOAD,
         STORE,
         RETURN,
@@ -70,6 +76,77 @@ pub mod common {
         pub lhs: usize,
         pub rhs: usize,
     }
+    impl IR {
+        pub fn get_irinfo(&self) -> IRInfo {
+            // イケてない for info in irinfo と書きたい
+            for i in 0..irinfo.len() {
+                if irinfo[i].op == self.op {
+                    return irinfo[i];
+                }
+            }
+            // イケてない 通るはずのない無駄なreturnを書いている
+            assert!(true);
+            return IRInfo{op: IRType::NOP, name: "NOP", ty: IRInfoType::NOARG}
+
+        }
+
+        fn tostr(&self) -> String {
+            let info = self.get_irinfo();
+            match info.ty {
+                IRInfoType::LABEL => return format!("{}:", self.lhs),
+                IRInfoType::REG => return format!("{} r{}", info.name, self.lhs),
+                IRInfoType::REG_REG => return format!("{} r{}, r{}", info.name, self.lhs, self.rhs),
+                IRInfoType::REG_IMN => return format!("{} r{}, {}", info.name, self.lhs, self.rhs),
+                IRInfoType::REG_LABEL => return format!("{} r{}, .L{}", info.name, self.lhs, self.rhs),
+                IRInfoType::NOARG => return format!("{}", info.name),
+            }
+        }
+    }
+
+    #[derive(Clone, Copy, Debug)]
+    pub enum IRInfoType {
+        NOARG,
+        REG,
+        LABEL,
+        REG_REG,
+        REG_IMN,
+        REG_LABEL,
+    }
+
+    #[derive(Clone, Copy, Debug)]
+    pub struct IRInfo<'a> {
+        pub op: IRType,
+        pub name: &'a str,
+        pub ty: IRInfoType,
+    }
+
+    // イケてない
+    static irinfo: [IRInfo; 15] = [
+            IRInfo{op: IRType::Ope('+'), name: "+", ty: IRInfoType::REG_REG},
+            IRInfo{op: IRType::Ope('-'), name: "-", ty: IRInfoType::REG_REG},
+            IRInfo{op: IRType::Ope('*'), name: "*", ty: IRInfoType::REG_REG},
+            IRInfo{op: IRType::Ope('/'), name: "/", ty: IRInfoType::REG_REG},
+            IRInfo{op: IRType::IMN, name: "MOV", ty: IRInfoType::REG_IMN},
+            IRInfo{op: IRType::ADD_IMN, name: "ADD", ty: IRInfoType::REG_IMN},
+            IRInfo{op: IRType::MOV, name: "MOV", ty: IRInfoType::REG_REG},
+            IRInfo{op: IRType::LABEL, name: "", ty: IRInfoType::REG_LABEL},
+            IRInfo{op: IRType::UNLESS, name: "UNLESS", ty: IRInfoType::REG_LABEL},
+            IRInfo{op: IRType::RETURN, name: "RET", ty: IRInfoType::REG},
+            IRInfo{op: IRType::ALLOCA, name: "ALLOCA", ty: IRInfoType::REG_IMN},
+            IRInfo{op: IRType::LOAD, name: "LOAD", ty: IRInfoType::REG_REG},
+            IRInfo{op: IRType::STORE, name: "STORE", ty: IRInfoType::REG_REG},
+            IRInfo{op: IRType::KILL, name: "KILL", ty: IRInfoType::NOARG},
+            IRInfo{op: IRType::NOP, name: "NOP", ty: IRInfoType::NOARG},
+            ];
+
+
+
+    pub fn dump_ir(irs: &Vec<IR>) {
+        for ir in irs {
+            eprintln!("{}", ir.tostr());
+        }
+    }
+
 
     pub fn error(mes: &str, val: Option<&String>) {
         match val {

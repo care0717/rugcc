@@ -33,6 +33,7 @@ pub fn tokenize(s: Vec<char>) -> Vec<Token>{
             }
             match  name.iter().collect::<String>().as_str()  {
                 "return" => tokens.push(Token{ty: TK::RETURN, val: name.iter().collect()}),
+                "if" => tokens.push(Token{ty: TK::IF, val: name.iter().collect()}),
                 _ => tokens.push(Token{ty: TK::IDENT, val: name.iter().collect()}),
             }
             continue;

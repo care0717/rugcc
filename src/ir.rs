@@ -3,6 +3,7 @@ use self::rugcc::common::{IR, ND, Node, IRType, error};
 
 use std::collections::HashMap;
 
+
 fn add(op: IRType, lhs: usize, rhs: usize, code: &mut Vec<IR>) {
     code.push(IR { op, lhs, rhs});
 }
@@ -52,8 +53,17 @@ fn gen_expr(node: Node, regno: &mut usize, code: &mut Vec<IR>, vars: &mut HashMa
     return lhs
 }
 
-fn gen_stmt(node: Node, regno: &mut usize, code: &mut Vec<IR>, vars: &mut HashMap<String, usize>, bpoff: &mut usize) {
+fn gen_stmt(node: Node, regno: &mut usize, code: &mut Vec<IR>, vars: &mut HashMap<String, usize>, bpoff: &mut usize, label: &mut usize) {
     match node.ty {
+        ND::IF => {
+            let r = gen_expr(*node.cond.unwrap(), regno, code, vars, bpoff);
+            let x = *label;
+            *label += 1;
+            add(IRType::UNLESS, r, x, code);
+            add(IRType::KILL, r, 0, code);
+            gen_stmt(*node.then.unwrap(), regno, code, vars, bpoff, label);
+            add(IRType::LABEL, x, 0, code);
+        },
         ND::RETURN => {
             let r = gen_expr(*node.expr.unwrap(), regno, code, vars, bpoff);
             add(IRType::RETURN, r, 0, code);
@@ -65,7 +75,7 @@ fn gen_stmt(node: Node, regno: &mut usize, code: &mut Vec<IR>, vars: &mut HashMa
         },
         ND::COMP_STMT => {
             for n in node.stmts {
-                gen_stmt(n, regno, code, vars, bpoff);
+                gen_stmt(n, regno, code, vars, bpoff, label);
             }
         },
         _ => error("unknown node: ", Some(&"aa".to_string())),
@@ -78,7 +88,8 @@ pub fn gen_ir(node: Node) -> Vec<IR> {
     let mut regno = 1;
     let mut vars = HashMap::new();
     let mut bpoff = 0;
-    gen_stmt(node, &mut regno, &mut code, &mut vars, &mut bpoff);
+    let mut label = 0;
+    gen_stmt(node, &mut regno, &mut code, &mut vars, &mut bpoff, &mut label);
     code.insert(0, IR{op: IRType::ALLOCA,lhs: 0, rhs: bpoff});
     add(IRType::KILL, 0, 0, &mut code);
     return code

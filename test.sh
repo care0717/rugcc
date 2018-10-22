@@ -1,7 +1,8 @@
 #!/bin/bash
 
 runtest() {
-    echo "$1" | cargo run > tmp.s
+    cargo build
+    ./target/debug/rugcc "$1" > tmp.s
     cc  -o tmp.exe tmp.s
 
     ./tmp.exe
@@ -27,5 +28,8 @@ runtest 'return (2+3)*(4+5);' 45
 runtest 'a=2; return a;' 2
 runtest 'a=2+6/2; a=a*2; return a;' 8
 runtest 'a=2; b=5+1; return a*b;' 12
+runtest 'if (1) return 2; return 3;' 2
+runtest 'if (0) return 2; return 3;' 3
+
 
 echo "OK"
