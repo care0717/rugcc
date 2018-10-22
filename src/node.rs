@@ -9,6 +9,12 @@ fn new_node(op: char, lhs: Node, rhs: Node) -> Node {
 
 fn term(tokens: &mut Vec<Token>) -> Node {
     let token = tokens.pop().unwrap();
+    if token.ty == TK::OPE('(') {
+        let node = assign(tokens);
+        expect(TK::OPE(')'), tokens);
+        return node
+    }
+
     if token.ty !=  TK::NUM && token.ty !=  TK::IDENT {
         error("number expected, but got ", Some(&token.val))
     }
