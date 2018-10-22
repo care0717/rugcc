@@ -4,7 +4,7 @@ use self::rugcc::common::{TK, Token, error, ND,  Node};
 use std;
 
 fn new_node(op: char, lhs: Node, rhs: Node) -> Node {
-    return Node{ty: ND::OPE(op), lhs: Some(Box::new(lhs)), rhs: Some(Box::new(rhs)), val: op.to_string(), expr: None, stmts: Vec::new(), cond: None, then: None};
+    return Node{ty: ND::OPE(op), lhs: Some(Box::new(lhs)), rhs: Some(Box::new(rhs)), val: op.to_string(), expr: None, stmts: Vec::new(), cond: None, then: None, els: None};
 }
 
 fn term(tokens: &mut Vec<Token>) -> Node {
@@ -19,9 +19,9 @@ fn term(tokens: &mut Vec<Token>) -> Node {
         error("number expected, but got ", Some(&token.val))
     }
     if token.ty == TK::NUM {
-        return Node{ty: ND::NUM, lhs: None, rhs: None, val: token.val, expr: None, stmts: Vec::new(), cond: None, then: None};
+        return Node{ty: ND::NUM, lhs: None, rhs: None, val: token.val, expr: None, stmts: Vec::new(), cond: None, then: None, els: None};
     } else {
-        return Node{ty: ND::IDENT, lhs: None, rhs: None, val: token.val, expr: None, stmts: Vec::new(), cond: None, then: None};
+        return Node{ty: ND::IDENT, lhs: None, rhs: None, val: token.val, expr: None, stmts: Vec::new(), cond: None, then: None, els: None};
     }
 }
 
@@ -93,11 +93,11 @@ fn expr(mut tokens: &mut Vec<Token>) -> Node {
     return lhs;
 }
 
-fn consume(ope: char, tokens: &mut Vec<Token>) -> bool {
+fn consume(ope: TK, tokens: &mut Vec<Token>) -> bool {
     let token = tokens.pop();
     match token {
         Some(t) => {
-            if t.ty == TK::OPE(ope) {
+            if t.ty == ope {
                 return true
             } else {
                 tokens.push(t);
@@ -110,7 +110,7 @@ fn consume(ope: char, tokens: &mut Vec<Token>) -> bool {
 
 fn assign(tokens: &mut Vec<Token>) -> Node {
     let lhs = expr(tokens);
-    if consume('=', tokens) {
+    if consume(TK::OPE('='), tokens) {
         return new_node('=', lhs, expr(tokens));
     } else {
         return lhs;
@@ -119,7 +119,7 @@ fn assign(tokens: &mut Vec<Token>) -> Node {
 
 fn stmt(tokens: &mut Vec<Token>) -> Node {
     let token = tokens.pop().unwrap();
-    let mut node = Node {ty: ND::EXPR_STMT, lhs: None, rhs: None, val: String::new(), expr: None, stmts: Vec::new(), cond: None, then: None};
+    let mut node = Node {ty: ND::EXPR_STMT, lhs: None, rhs: None, val: String::new(), expr: None, stmts: Vec::new(), cond: None, then: None, els: None};
 
     match token.ty {
         TK::IF => {
@@ -128,6 +128,7 @@ fn stmt(tokens: &mut Vec<Token>) -> Node {
             node.cond = Some(Box::new(assign(tokens)));
             expect(TK::OPE(')'), tokens);
             node.then = Some(Box::new(stmt(tokens)));
+            if consume(TK::ELSE, tokens) {node.els = Some(Box::new(stmt(tokens)));}
             return node
         }
         TK::RETURN => {
@@ -147,7 +148,7 @@ fn stmt(tokens: &mut Vec<Token>) -> Node {
 }
 
 pub fn parse(tokens: &mut Vec<Token>) -> Node{
-    let mut node = Node{ty: ND::COMP_STMT, lhs: None, rhs: None, val: String::new(), expr: None, stmts: Vec::new(), cond: None, then: None};
+    let mut node = Node{ty: ND::COMP_STMT, lhs: None, rhs: None, val: String::new(), expr: None, stmts: Vec::new(), cond: None, then: None, els: None};
     loop {
         let optoken = tokens.pop();
         if optoken.is_none() {return node}

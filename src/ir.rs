@@ -62,7 +62,16 @@ fn gen_stmt(node: Node, regno: &mut usize, code: &mut Vec<IR>, vars: &mut HashMa
             add(IRType::UNLESS, r, x, code);
             add(IRType::KILL, r, 0, code);
             gen_stmt(*node.then.unwrap(), regno, code, vars, bpoff, label);
+            if node.els.is_none() {
+                add(IRType::LABEL, x, 0, code);
+                return;
+            }
+            let y = *label;
+            *label += 1;
+            add(IRType::JMP, y, 0, code);
             add(IRType::LABEL, x, 0, code);
+            gen_stmt(*node.els.unwrap(), regno, code, vars, bpoff, label);
+            add(IRType::LABEL, y, 0, code);
         },
         ND::RETURN => {
             let r = gen_expr(*node.expr.unwrap(), regno, code, vars, bpoff);

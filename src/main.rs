@@ -35,6 +35,7 @@ fn main() {
     //eprintln!("{:?}", node);
     let mut irs = ir::gen_ir(node);
     if dump_ir1 {dump_ir(&irs)}
+    //eprintln!("{:?}", irs);
     regalloc::alloc_regs(&mut regs, &mut irs);
     if dump_ir2 {dump_ir(&irs)}
     print!(".intel_syntax noprefix\n");

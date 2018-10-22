@@ -10,6 +10,7 @@ pub mod common {
         RETURN,
         IDENT,
         IF,
+        ELSE,
         END_LINE,
     }
 
@@ -40,6 +41,7 @@ pub mod common {
         pub stmts: Vec<Node>,
         pub cond: Option<Box<Node>>,
         pub then: Option<Box<Node>>,
+        pub els: Option<Box<Node>>,
     }
 
     impl Node {
@@ -65,6 +67,7 @@ pub mod common {
         LOAD,
         STORE,
         RETURN,
+        JMP,
         KILL,
         NOP,
         Ope(char),
@@ -121,7 +124,7 @@ pub mod common {
     }
 
     // イケてない
-    static irinfo: [IRInfo; 15] = [
+    static irinfo: [IRInfo; 16] = [
             IRInfo{op: IRType::Ope('+'), name: "+", ty: IRInfoType::REG_REG},
             IRInfo{op: IRType::Ope('-'), name: "-", ty: IRInfoType::REG_REG},
             IRInfo{op: IRType::Ope('*'), name: "*", ty: IRInfoType::REG_REG},
@@ -129,7 +132,7 @@ pub mod common {
             IRInfo{op: IRType::IMN, name: "MOV", ty: IRInfoType::REG_IMN},
             IRInfo{op: IRType::ADD_IMN, name: "ADD", ty: IRInfoType::REG_IMN},
             IRInfo{op: IRType::MOV, name: "MOV", ty: IRInfoType::REG_REG},
-            IRInfo{op: IRType::LABEL, name: "", ty: IRInfoType::REG_LABEL},
+            IRInfo{op: IRType::LABEL, name: "", ty: IRInfoType::LABEL},
             IRInfo{op: IRType::UNLESS, name: "UNLESS", ty: IRInfoType::REG_LABEL},
             IRInfo{op: IRType::RETURN, name: "RET", ty: IRInfoType::REG},
             IRInfo{op: IRType::ALLOCA, name: "ALLOCA", ty: IRInfoType::REG_IMN},
@@ -137,7 +140,8 @@ pub mod common {
             IRInfo{op: IRType::STORE, name: "STORE", ty: IRInfoType::REG_REG},
             IRInfo{op: IRType::KILL, name: "KILL", ty: IRInfoType::NOARG},
             IRInfo{op: IRType::NOP, name: "NOP", ty: IRInfoType::NOARG},
-            ];
+            IRInfo{op: IRType::JMP, name: "JMP", ty: IRInfoType::LABEL},
+    ];
 
 
 

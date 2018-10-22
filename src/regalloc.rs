@@ -36,6 +36,7 @@ pub fn alloc_regs(regs: &mut Vec<&str>, irs: &mut Vec<IR>) {
     for i in 0..irs.len() {
         let ir = irs[i].clone();
         let info = ir.get_irinfo();
+        //eprintln!("{:?}", info);
         match info.ty {
             IRInfoType::REG | IRInfoType::REG_IMN | IRInfoType::REG_LABEL => {
                 irs[i].lhs = alloc(ir.lhs, &mut reg_map, regs, &mut used);

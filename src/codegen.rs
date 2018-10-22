@@ -44,6 +44,9 @@ pub fn gen_x86(regs: Vec<&str>, irs: Vec<IR>) {
                 print!("\tcmp {}, 0\n", regs[ir.lhs]);
                 print!("\tje .L{}\n", ir.rhs);
             },
+            IRType::JMP => {
+                print!("\tjmp .L{}\n", ir.lhs);
+            }
             IRType::ALLOCA => {
                 if ir.rhs != 0 {
                     print!("\tsub rsp, {}\n", ir.rhs);
