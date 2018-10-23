@@ -155,12 +155,11 @@ fn stmt(tokens: &mut Vec<Token>) -> Node {
             return node
         }
     }
-
 }
 
-pub fn parse(tokens: &mut Vec<Token>) -> Node{
+fn compound_stmt(tokens: &mut Vec<Token>) -> Node{
     let mut node = Node{ty: ND::COMP_STMT, ..Default::default()};
-    loop {
+    while !consume(TK::OPE('}'), tokens) {
         let optoken = tokens.pop();
         if optoken.is_none() {return node}
         let token = optoken.unwrap();
@@ -168,4 +167,29 @@ pub fn parse(tokens: &mut Vec<Token>) -> Node{
         tokens.push(token);
         node.stmts.push(stmt(tokens));
     }
+    return node
+}
+
+fn function(tokens: &mut Vec<Token>) -> Node{
+    let token = tokens.pop().unwrap();
+    if token.ty != TK::IDENT {error("function name expected, but got {}", Some(&token.val))}
+    expect(TK::OPE('('), tokens);
+    let mut node = Node{ty: ND::FUNC, val: token.val, ..Default::default()};
+    while !consume(TK::OPE(')'), tokens){
+        node.args.push(term(tokens));
+    }
+    expect(TK::OPE('{'), tokens);
+    node.body = Some(Box::new(compound_stmt(tokens)));
+    return node;
+}
+
+pub fn parse(tokens: &mut Vec<Token>) -> Vec<Node> {
+    let mut nodes = Vec::new();
+    let mut token = tokens.pop().unwrap();
+    while token.ty != TK::EOF {
+        tokens.push(token);
+        nodes.push(function(tokens));
+        token = tokens.pop().unwrap();
+    }
+    return nodes
 }

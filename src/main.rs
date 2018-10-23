@@ -8,6 +8,8 @@ mod ir;
 mod regalloc;
 mod codegen;
 
+const REGS: [&str; 7] = ["r10", "r11", "r9", "r12", "r13", "r14", "r15"];
+
 fn main() {
     let app = App::new("rugcc")
         .version("0.0.1")
@@ -28,18 +30,13 @@ fn main() {
     let dump_ir1 = matches.is_present("dump-ir1");
     let dump_ir2 = matches.is_present("dump-ir2");
 
-    let mut regs = ["rdi", "rsi", "r10", "r11", "r12", "r13", "r14", "r15"].to_vec();
     let mut tokens = token::tokenize(input.chars().collect());
     //eprintln!("{:?}", tokens);
-    let node = node::parse(&mut tokens);
+    let mut fns = ir::gen_ir(node::parse(&mut tokens));
     //eprintln!("{:?}", node);
-    let mut irs = ir::gen_ir(node);
-    if dump_ir1 {dump_ir(&irs)}
+    if dump_ir1 {dump_ir(&fns)}
     //eprintln!("{:?}", irs);
-    regalloc::alloc_regs(&mut regs, &mut irs);
-    if dump_ir2 {dump_ir(&irs)}
-    print!(".intel_syntax noprefix\n");
-    print!(".global _main\n");
-    print!("_main:\n");
-    codegen::gen_x86(regs, irs);
+    regalloc::alloc_regs(&mut fns);
+    if dump_ir2 {dump_ir(&fns)}
+    codegen::gen_x86(fns);
 }

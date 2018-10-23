@@ -24,6 +24,7 @@ pub mod common {
     pub enum ND {
         NUM,
         CALL,
+        FUNC,
         OPE(char),
         IDENT,
         IF,
@@ -44,22 +45,34 @@ pub mod common {
         pub then: Option<Box<Node>>,
         pub els: Option<Box<Node>>,
         pub args: Vec<Node>,
+        pub body: Option<Box<Node>>,
     }
     impl Default for Node {
         fn default() -> Self {
-            Self { ty: ND::NUM, lhs: None, rhs: None, val: String::new(), expr: None, cond: None, then: None, els: None, stmts: Vec::new(), args: Vec::new()}
+            Self { ty: ND::NUM, lhs: None, rhs: None, val: String::new(), expr: None, cond: None, then: None, els: None, stmts: Vec::new(), args: Vec::new(), body: None}
         }
     }
-
     impl Node {
         pub fn get_ope(&self) -> char {
             match self.ty {
                 ND::OPE(c) => return c,
                 _ => {
-                    assert!(true);
+                    assert!(false);
                     return 'a'
                 },
             }
+        }
+    }
+
+    #[derive(PartialEq, Debug, Clone)]
+    pub struct Function {
+        pub name: String,
+        pub args: Vec<usize>,
+        pub irs: Vec<IR>,
+    }
+    impl Default for Function {
+        fn default() -> Self {
+            Self { name: String::new(), args: Vec::new(), irs: Vec::new() }
         }
     }
 
@@ -81,7 +94,7 @@ pub mod common {
         Ope(char),
     }
 
-    #[derive(Clone, Debug)]
+    #[derive(Clone, Debug, PartialEq)]
     pub struct IR {
         pub op: IRType,
         pub lhs: usize,
@@ -94,8 +107,6 @@ pub mod common {
             Self { op: IRType::NOP, lhs: 0, rhs: 0, name: String::new(), args: Vec::new() }
         }
     }
-
-
     impl IR {
         pub fn get_irinfo(&self) -> IRInfo {
             // イケてない for info in irinfo と書きたい
@@ -105,7 +116,7 @@ pub mod common {
                 }
             }
             // イケてない 通るはずのない無駄なreturnを書いている
-            assert!(true);
+            assert!(false);
             return IRInfo{op: IRType::NOP, name: "NOP", ty: IRInfoType::NOARG}
 
         }
@@ -119,12 +130,12 @@ pub mod common {
                 IRInfoType::REG_IMN => return format!("{} r{}, {}", info.name, self.lhs, self.rhs),
                 IRInfoType::REG_LABEL => return format!("{} r{}, .L{}", info.name, self.lhs, self.rhs),
                 IRInfoType::NOARG => return format!("{}", info.name),
-                IRInfoType::CALL => return format!("r{} = {}(", self.name, self.lhs),
+                IRInfoType::CALL => return format!("r{} = {}(", self.lhs, self.name),
             }
         }
     }
 
-    #[derive(Clone, Copy, Debug)]
+    #[derive(Clone, Copy, Debug, PartialEq)]
     pub enum IRInfoType {
         NOARG,
         REG,
@@ -165,9 +176,12 @@ pub mod common {
 
 
 
-    pub fn dump_ir(irs: &Vec<IR>) {
-        for ir in irs {
-            eprintln!("{}", ir.tostr());
+    pub fn dump_ir(fns: &Vec<Function>) {
+        for f in fns {
+            eprintln!("{}():", f.clone().name);
+            for ir in f.clone().irs {
+                eprintln!("{}", ir.tostr());
+            }
         }
     }
 

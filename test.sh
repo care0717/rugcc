@@ -17,24 +17,25 @@ runtest() {
     rm -f tmp*
 }
 
-runtest 'return 128;' 128
-runtest 'return 2+3;' 5
-runtest 'return 10-3;' 7
-runtest 'return 5+20-4-2;' 19
-runtest 'return 12 +  34 - 5;' 41
-runtest 'return 1+2+3+4+5+6+7+8+9+10+11+12+13;' 91
-runtest 'return 2*3;' 6
-runtest 'return 10/3+1;' 4
-runtest 'return (2+3)*(4+5);' 45
-runtest 'a=2; return a;' 2
-runtest 'a=2+6/2; a=a*2; return a;' 8
-runtest 'a=2; b=5+1; return a*b;' 12
-runtest 'if (1) return 1+2; return 3*(1+3);' 3
-runtest 'if (0) return 1+2; return 3*(1+3);' 12
-runtest 'if (1) a=2; else a=3; return a;' 2
-runtest 'if (0) a=2; else a=3; return a;' 3
+runtest 'main() { return 128; }' 128
+runtest 'main() { return 2+3; }' 5
+runtest 'main() { return 10-3; }' 7
+runtest 'main() { return 5+20-4-2; }' 19
+runtest 'main() { return 12 +  34 - 5; }' 41
+runtest 'main() { return 1+2+3+4+5+6+7+8+9+10+11+12+13; }' 91
+runtest 'main() { return 2*3; }' 6
+runtest 'main() { return 10/3+1; }' 4
+runtest 'main() { return (2+3)*(4+5); }' 45
+runtest 'main() { a=2; return a; }' 2
+runtest 'main() { a=2+6/2; a=a*2; return a; }' 8
+runtest 'main() { a=2; b=5+1; return a*b; }' 12
+runtest 'main() { if (1) return 1+2; return 3*(1+3); }' 3
+runtest 'main() { if (0) return 1+2; return 3*(1+3); }' 12
+runtest 'main() { if (1) a=2; else a=3; return a; }' 2
+runtest 'main() { if (0) a=2; else a=3; return a; }' 3
 
-
-runtest 'return plus(2, 3);' 5
+runtest 'main() { return _plus(2, 3); }' 5
+runtest 'one() { return 1; } main() { return one(); }' 1
+runtest 'one() { return 1; } two() { return 2; } main() { return one()+two(); }' 3
 
 echo "OK"

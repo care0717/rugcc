@@ -1,6 +1,5 @@
 extern crate rugcc;
-use self::rugcc::common::{IR, ND, Node, IRType, error};
-
+use self::rugcc::common::{IR, ND, Node, IRType, error, Function};
 use std::collections::HashMap;
 
 
@@ -105,16 +104,21 @@ fn gen_stmt(node: Node, regno: &mut usize, code: &mut Vec<IR>, vars: &mut HashMa
     }
 }
 
-pub fn gen_ir(node: Node) -> Vec<IR> {
-    assert!(node.ty==ND::COMP_STMT);
-    let mut code= Vec::new();
-    let mut regno = 1;
-    let mut vars = HashMap::new();
-    let mut bpoff = 0;
-    let mut label = 0;
-    gen_stmt(node, &mut regno, &mut code, &mut vars, &mut bpoff, &mut label);
-    code.insert(0, IR{op: IRType::ALLOCA,lhs: 0, rhs: bpoff, ..Default::default()});
-    add(IRType::KILL, 0, 0, &mut code);
-    return code
+pub fn gen_ir(nodes: Vec<Node>) -> Vec<Function> {
+    let mut funcs = Vec::new();
+    for node in nodes {
+        assert!(node.ty==ND::FUNC);
+        let mut code= Vec::new();
+        let mut regno = 1;
+        let mut vars = HashMap::new();
+        let mut bpoff = 0;
+        let mut label = 0;
+        let name = node.val.clone();
+        gen_stmt(*node.body.unwrap(), &mut regno, &mut code, &mut vars, &mut bpoff, &mut label);
+        code.insert(0, IR{op: IRType::ALLOCA,lhs: 0, rhs: bpoff, ..Default::default()});
+        add(IRType::KILL, 0, 0, &mut code);
+        funcs.push(Function{name, irs: code, ..Default::default()})
+    }
+    return funcs
 }
 

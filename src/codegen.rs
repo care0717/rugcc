@@ -1,70 +1,72 @@
 extern crate rugcc;
-use self::rugcc::common::{IR, IRType};
+use self::rugcc::common::{IRType, Function};
+use REGS;
 
-pub fn gen_x86(regs: Vec<&str>, irs: Vec<IR>) {
-    let ret = ".Lend";
+fn gen(func: Function, label: usize) {
+    let ret = format!(".Lend{}", label);
+    if func.name == "main" {
+        print!(".global _{}\n", func.name);
+        print!("_{}:\n", func.name);
+    } else {
+        print!(".global {}\n", func.name);
+        print!("{}:\n", func.name);
+    }
+    print!("\tpush r12\n");
+    print!("\tpush r13\n");
+    print!("\tpush r14\n");
+    print!("\tpush r15\n");
     print!("\tpush rbp\n");
     print!("\tmov rbp, rsp\n");
 
-    for ir in irs {
+    for ir in func.irs {
         match ir.op {
             IRType::IMN => {
-                print!("\tmov {}, {}\n", regs[ir.lhs], ir.rhs);
+                print!("\tmov {}, {}\n", REGS[ir.lhs], ir.rhs);
             },
             IRType::MOV => {
-                print!("\tmov {}, {}\n", regs[ir.lhs], regs[ir.rhs]);
+                print!("\tmov {}, {}\n", REGS[ir.lhs], REGS[ir.rhs]);
             },
             IRType::ADD_IMN => {
-                print!("\tadd {}, {}\n", regs[ir.lhs], ir.rhs);
+                print!("\tadd {}, {}\n", REGS[ir.lhs], ir.rhs);
             },
             IRType::RETURN => {
-                print!("\tmov rax, {}\n", regs[ir.lhs]);
+                print!("\tmov rax, {}\n", REGS[ir.lhs]);
                 print!("\tjmp {}\n", ret);
             },
             IRType::Ope(o) => {
                 match o {
-                    '+' => print!("\tadd {}, {}\n", regs[ir.lhs], regs[ir.rhs]),
-                    '-' => print!("\tsub {}, {}\n", regs[ir.lhs], regs[ir.rhs]),
+                    '+' => print!("\tadd {}, {}\n", REGS[ir.lhs], REGS[ir.rhs]),
+                    '-' => print!("\tsub {}, {}\n", REGS[ir.lhs], REGS[ir.rhs]),
                     '*' => {
-                        print!("\tmov rax, {}\n", regs[ir.rhs]);
-                        print!("\tmul {}\n", regs[ir.lhs]);
-                        print!("\tmov {}, rax\n", regs[ir.lhs]);
+                        print!("\tmov rax, {}\n", REGS[ir.rhs]);
+                        print!("\tmul {}\n", REGS[ir.lhs]);
+                        print!("\tmov {}, rax\n", REGS[ir.lhs]);
                     }
                     '/' => {
-                        print!("\tmov rax, {}\n", regs[ir.lhs]);
+                        print!("\tmov rax, {}\n", REGS[ir.lhs]);
                         print!("\tcqo\n");
-                        print!("\tdiv {}\n", regs[ir.rhs]);
-                        print!("\tmov {}, rax\n", regs[ir.lhs]);
+                        print!("\tdiv {}\n", REGS[ir.rhs]);
+                        print!("\tmov {}, rax\n", REGS[ir.lhs]);
                     }
-                    _ => assert!(true),
+                    _ => assert!(false),
                 }
             },
             IRType::CALL => {
-                print!("\tpush rbx\n");
-                print!("\tpush rbp\n");
-                print!("\tpush rsp\n");
-                print!("\tpush r12\n");
-                print!("\tpush r13\n");
-                print!("\tpush r14\n");
-                print!("\tpush r15\n");
                 let arg = ["rdi", "rsi", "rdx", "rcx", "r8", "r9"];
                 for i in 0..ir.args.clone().len(){
-                    print!("\tmov {}, {}\n", arg[i], regs[ir.args[i]]);
+                    print!("\tmov {}, {}\n", arg[i], REGS[ir.args[i]]);
                 }
+                print!("\tpush r10\n");
+                print!("\tpush r11\n");
                 print!("\tmov rax, 0\n");
-                print!("\tcall _{}\n", ir.name);
-                print!("\tmov {}, rax\n", regs[ir.lhs]);
-                print!("\tpush r15\n");
-                print!("\tpush r14\n");
-                print!("\tpush r13\n");
-                print!("\tpush r12\n");
-                print!("\tpush rsp\n");
-                print!("\tpush rbp\n");
-                print!("\tpush rbx\n");
+                print!("\tcall {}\n", ir.name);
+                print!("\tpop r11\n");
+                print!("\tpop r10\n");
+                print!("\tmov {}, rax\n", REGS[ir.lhs]);
             },
             IRType::LABEL => print!(".L{}:\n", ir.lhs),
             IRType::UNLESS => {
-                print!("\tcmp {}, 0\n", regs[ir.lhs]);
+                print!("\tcmp {}, 0\n", REGS[ir.lhs]);
                 print!("\tje .L{}\n", ir.rhs);
             },
             IRType::JMP => {
@@ -73,24 +75,36 @@ pub fn gen_x86(regs: Vec<&str>, irs: Vec<IR>) {
             IRType::ALLOCA => {
                 if ir.rhs != 0 {
                     print!("\tsub rsp, {}\n", ir.rhs);
-                    print!("\tmov {}, rsp\n", regs[ir.lhs]);
+                    print!("\tmov {}, rsp\n", REGS[ir.lhs]);
                 }
             },
             IRType::LOAD => {
-                print!("\tmov {}, [{}]\n", regs[ir.lhs], regs[ir.rhs]);
+                print!("\tmov {}, [{}]\n", REGS[ir.lhs], REGS[ir.rhs]);
             },
             IRType::STORE => {
-                print!("\tmov [{}], {}\n", regs[ir.lhs], regs[ir.rhs]);
+                print!("\tmov [{}], {}\n", REGS[ir.lhs], REGS[ir.rhs]);
             },
             IRType::NOP => {},
-            IRType::KILL => assert!(true),
+            IRType::KILL => assert!(false),
         }
     }
 
     print!("{}:\n", ret);
     print!("\tmov rsp, rbp\n");
-    print!("\tmov rsp, rbp\n");
     print!("\tpop rbp\n");
+    print!("\tpop r15\n");
+    print!("\tpop r14\n");
+    print!("\tpop r13\n");
+    print!("\tpop r12\n");
     print!("\tret\n");
 
+}
+
+pub fn gen_x86(fns: Vec<Function>){
+    print!(".intel_syntax noprefix\n");
+    let mut label = 0;
+    for f in fns{
+        gen(f, label);
+        label += 1;
+    }
 }
