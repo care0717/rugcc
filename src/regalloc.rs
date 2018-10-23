@@ -45,6 +45,12 @@ pub fn alloc_regs(regs: &mut Vec<&str>, irs: &mut Vec<IR>) {
                 irs[i].lhs = alloc(ir.lhs, &mut reg_map, regs, &mut used);
                 irs[i].rhs = alloc(ir.rhs, &mut reg_map, regs, &mut used);
             },
+            IRInfoType::CALL => {
+                irs[i].lhs = alloc(ir.lhs, &mut reg_map, regs, &mut used);
+                for j in 0..ir.args.clone().len() {
+                    irs[i].args[j] = alloc(ir.args[j], &mut reg_map, regs, &mut used);
+                }
+            },
             _ => {}
         }
         if ir.op == IRType::KILL {

@@ -39,6 +39,29 @@ pub fn gen_x86(regs: Vec<&str>, irs: Vec<IR>) {
                     _ => assert!(true),
                 }
             },
+            IRType::CALL => {
+                print!("\tpush rbx\n");
+                print!("\tpush rbp\n");
+                print!("\tpush rsp\n");
+                print!("\tpush r12\n");
+                print!("\tpush r13\n");
+                print!("\tpush r14\n");
+                print!("\tpush r15\n");
+                let arg = ["rdi", "rsi", "rdx", "rcx", "r8", "r9"];
+                for i in 0..ir.args.clone().len(){
+                    print!("\tmov {}, {}\n", arg[i], regs[ir.args[i]]);
+                }
+                print!("\tmov rax, 0\n");
+                print!("\tcall _{}\n", ir.name);
+                print!("\tmov {}, rax\n", regs[ir.lhs]);
+                print!("\tpush r15\n");
+                print!("\tpush r14\n");
+                print!("\tpush r13\n");
+                print!("\tpush r12\n");
+                print!("\tpush rsp\n");
+                print!("\tpush rbp\n");
+                print!("\tpush rbx\n");
+            },
             IRType::LABEL => print!(".L{}:\n", ir.lhs),
             IRType::UNLESS => {
                 print!("\tcmp {}, 0\n", regs[ir.lhs]);

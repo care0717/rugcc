@@ -23,6 +23,7 @@ pub mod common {
     #[derive(PartialEq, Debug)]
     pub enum ND {
         NUM,
+        CALL,
         OPE(char),
         IDENT,
         IF,
@@ -42,6 +43,12 @@ pub mod common {
         pub cond: Option<Box<Node>>,
         pub then: Option<Box<Node>>,
         pub els: Option<Box<Node>>,
+        pub args: Vec<Node>,
+    }
+    impl Default for Node {
+        fn default() -> Self {
+            Self { ty: ND::NUM, lhs: None, rhs: None, val: String::new(), expr: None, cond: None, then: None, els: None, stmts: Vec::new(), args: Vec::new()}
+        }
     }
 
     impl Node {
@@ -67,6 +74,7 @@ pub mod common {
         LOAD,
         STORE,
         RETURN,
+        CALL,
         JMP,
         KILL,
         NOP,
@@ -78,7 +86,16 @@ pub mod common {
         pub op: IRType,
         pub lhs: usize,
         pub rhs: usize,
+        pub name: String,
+        pub args: Vec<usize>,
     }
+    impl Default for IR {
+        fn default() -> Self {
+            Self { op: IRType::NOP, lhs: 0, rhs: 0, name: String::new(), args: Vec::new() }
+        }
+    }
+
+
     impl IR {
         pub fn get_irinfo(&self) -> IRInfo {
             // イケてない for info in irinfo と書きたい
@@ -96,12 +113,13 @@ pub mod common {
         fn tostr(&self) -> String {
             let info = self.get_irinfo();
             match info.ty {
-                IRInfoType::LABEL => return format!("{}:", self.lhs),
+                IRInfoType::LABEL => return format!(".L{}:", self.lhs),
                 IRInfoType::REG => return format!("{} r{}", info.name, self.lhs),
                 IRInfoType::REG_REG => return format!("{} r{}, r{}", info.name, self.lhs, self.rhs),
                 IRInfoType::REG_IMN => return format!("{} r{}, {}", info.name, self.lhs, self.rhs),
                 IRInfoType::REG_LABEL => return format!("{} r{}, .L{}", info.name, self.lhs, self.rhs),
                 IRInfoType::NOARG => return format!("{}", info.name),
+                IRInfoType::CALL => return format!("r{} = {}(", self.name, self.lhs),
             }
         }
     }
@@ -114,6 +132,7 @@ pub mod common {
         REG_REG,
         REG_IMN,
         REG_LABEL,
+        CALL,
     }
 
     #[derive(Clone, Copy, Debug)]
@@ -124,7 +143,7 @@ pub mod common {
     }
 
     // イケてない
-    static irinfo: [IRInfo; 16] = [
+    static irinfo: [IRInfo; 17] = [
             IRInfo{op: IRType::Ope('+'), name: "+", ty: IRInfoType::REG_REG},
             IRInfo{op: IRType::Ope('-'), name: "-", ty: IRInfoType::REG_REG},
             IRInfo{op: IRType::Ope('*'), name: "*", ty: IRInfoType::REG_REG},
@@ -141,6 +160,7 @@ pub mod common {
             IRInfo{op: IRType::KILL, name: "KILL", ty: IRInfoType::NOARG},
             IRInfo{op: IRType::NOP, name: "NOP", ty: IRInfoType::NOARG},
             IRInfo{op: IRType::JMP, name: "JMP", ty: IRInfoType::LABEL},
+            IRInfo{op: IRType::CALL, name: "CALL", ty: IRInfoType::CALL},
     ];
 
 

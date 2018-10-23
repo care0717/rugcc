@@ -4,7 +4,7 @@ use self::rugcc::common::{TK, Token, error, ND,  Node};
 use std;
 
 fn new_node(op: char, lhs: Node, rhs: Node) -> Node {
-    return Node{ty: ND::OPE(op), lhs: Some(Box::new(lhs)), rhs: Some(Box::new(rhs)), val: op.to_string(), expr: None, stmts: Vec::new(), cond: None, then: None, els: None};
+    return Node{ty: ND::OPE(op), lhs: Some(Box::new(lhs)), rhs: Some(Box::new(rhs)), val: op.to_string(), ..Default::default()};
 }
 
 fn term(tokens: &mut Vec<Token>) -> Node {
@@ -19,9 +19,20 @@ fn term(tokens: &mut Vec<Token>) -> Node {
         error("number expected, but got ", Some(&token.val))
     }
     if token.ty == TK::NUM {
-        return Node{ty: ND::NUM, lhs: None, rhs: None, val: token.val, expr: None, stmts: Vec::new(), cond: None, then: None, els: None};
+        return Node{ty: ND::NUM, val: token.val, ..Default::default()};
     } else {
-        return Node{ty: ND::IDENT, lhs: None, rhs: None, val: token.val, expr: None, stmts: Vec::new(), cond: None, then: None, els: None};
+        let mut node = Node{ty: ND::IDENT, val: token.val, ..Default::default()};
+        if !consume(TK::OPE('('), tokens) {
+            return node
+        }
+        node.ty = ND::CALL;
+        if consume(TK::OPE(')'), tokens) {return node}
+        node.args.push(assign(tokens));
+        while consume(TK::OPE(','), tokens) {
+            node.args.push(assign(tokens));
+        }
+        expect(TK::OPE(')'), tokens);
+        return node
     }
 }
 
@@ -119,7 +130,7 @@ fn assign(tokens: &mut Vec<Token>) -> Node {
 
 fn stmt(tokens: &mut Vec<Token>) -> Node {
     let token = tokens.pop().unwrap();
-    let mut node = Node {ty: ND::EXPR_STMT, lhs: None, rhs: None, val: String::new(), expr: None, stmts: Vec::new(), cond: None, then: None, els: None};
+    let mut node = Node {ty: ND::EXPR_STMT, ..Default::default()};
 
     match token.ty {
         TK::IF => {
@@ -148,7 +159,7 @@ fn stmt(tokens: &mut Vec<Token>) -> Node {
 }
 
 pub fn parse(tokens: &mut Vec<Token>) -> Node{
-    let mut node = Node{ty: ND::COMP_STMT, lhs: None, rhs: None, val: String::new(), expr: None, stmts: Vec::new(), cond: None, then: None, els: None};
+    let mut node = Node{ty: ND::COMP_STMT, ..Default::default()};
     loop {
         let optoken = tokens.pop();
         if optoken.is_none() {return node}

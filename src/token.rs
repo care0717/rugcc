@@ -13,7 +13,7 @@ pub fn tokenize(s: Vec<char>) -> Vec<Token>{
             counter += 1;
             continue;
         }
-        if c=='+' || c=='-' || c=='*' || c=='/' || c=='=' || c== '(' || c==')' {
+        if c=='+' || c=='-' || c=='*' || c=='/' || c=='=' || c== '(' || c==')' || c==',' {
             tokens.push(Token{ty: TK::OPE(c), val: c.to_string()});
             counter += 1;
             continue;

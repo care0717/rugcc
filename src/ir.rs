@@ -5,7 +5,7 @@ use std::collections::HashMap;
 
 
 fn add(op: IRType, lhs: usize, rhs: usize, code: &mut Vec<IR>) {
-    code.push(IR { op, lhs, rhs});
+    code.push(IR { op, lhs, rhs, ..Default::default()});
 }
 
 fn gen_lval(node: Node, regno: &mut usize, code: &mut Vec<IR>, vars: &mut HashMap<String, usize>, bpoff: &mut usize) -> usize {
@@ -36,12 +36,26 @@ fn gen_expr(node: Node, regno: &mut usize, code: &mut Vec<IR>, vars: &mut HashMa
         let r = gen_lval(node, regno, code, vars, bpoff);
         add(IRType::LOAD, r, r, code);
         return r
+    } else if node.ty == ND::CALL {
+        let mut args = Vec::new();
+        for n  in node.args {
+            args.push(gen_expr(n, regno, code, vars, bpoff));
+        }
+        let r = *regno;
+        *regno += 1;
+
+        let ir = IR { op: IRType::CALL, lhs: r, rhs: 0, name: node.val, args};
+        code.push(ir.clone());
+        for i in ir.args {
+            add(IRType::KILL, i, 0, code);
+        }
+        return r
     } else if node.ty == ND::OPE('=') {
         let rhs = gen_expr(*node.rhs.unwrap(), regno, code, vars, bpoff);
         let lhs = gen_lval(*node.lhs.unwrap(), regno, code, vars, bpoff);
         add(IRType::STORE, lhs, rhs, code);
         add(IRType::KILL, rhs, 0, code);
-        return lhs;
+        return lhs
     }
     let ope = node.get_ope();
     *regno += 1;
@@ -99,7 +113,7 @@ pub fn gen_ir(node: Node) -> Vec<IR> {
     let mut bpoff = 0;
     let mut label = 0;
     gen_stmt(node, &mut regno, &mut code, &mut vars, &mut bpoff, &mut label);
-    code.insert(0, IR{op: IRType::ALLOCA,lhs: 0, rhs: bpoff});
+    code.insert(0, IR{op: IRType::ALLOCA,lhs: 0, rhs: bpoff, ..Default::default()});
     add(IRType::KILL, 0, 0, &mut code);
     return code
 }
