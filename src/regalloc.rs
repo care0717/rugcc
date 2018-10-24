@@ -64,6 +64,9 @@ pub fn alloc_regs(fns: &mut Vec<Function>) {
         for _i in 0..REGS.len() {
             used.push(false);
         }
+        // r0 is a reserved register that is always mapped to rbp.
+        reg_map[0] = 0;
+        used[0] = true;
         visit(&mut f.irs, &mut reg_map, &mut used);
     }
 }

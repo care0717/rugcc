@@ -11,12 +11,13 @@ fn gen(func: Function, label: usize) {
         print!(".global {}\n", func.name);
         print!("{}:\n", func.name);
     }
+    print!("\tpush rbp\n");
+    print!("\tmov rbp, rsp\n");
+    print!("\tsub rsp, {}\n", func.stack_size);
     print!("\tpush r12\n");
     print!("\tpush r13\n");
     print!("\tpush r14\n");
     print!("\tpush r15\n");
-    print!("\tpush rbp\n");
-    print!("\tmov rbp, rsp\n");
 
     for ir in func.irs {
         match ir.op {
@@ -26,8 +27,8 @@ fn gen(func: Function, label: usize) {
             IRType::MOV => {
                 print!("\tmov {}, {}\n", REGS[ir.lhs], REGS[ir.rhs]);
             },
-            IRType::ADD_IMN => {
-                print!("\tadd {}, {}\n", REGS[ir.lhs], ir.rhs);
+            IRType::SUB_IMN => {
+                print!("\tsub {}, {}\n", REGS[ir.lhs], ir.rhs);
             },
             IRType::RETURN => {
                 print!("\tmov rax, {}\n", REGS[ir.lhs]);
@@ -71,12 +72,6 @@ fn gen(func: Function, label: usize) {
             },
             IRType::JMP => {
                 print!("\tjmp .L{}\n", ir.lhs);
-            }
-            IRType::ALLOCA => {
-                if ir.rhs != 0 {
-                    print!("\tsub rsp, {}\n", ir.rhs);
-                    print!("\tmov {}, rsp\n", REGS[ir.lhs]);
-                }
             },
             IRType::LOAD => {
                 print!("\tmov {}, [{}]\n", REGS[ir.lhs], REGS[ir.rhs]);
@@ -90,12 +85,12 @@ fn gen(func: Function, label: usize) {
     }
 
     print!("{}:\n", ret);
-    print!("\tmov rsp, rbp\n");
-    print!("\tpop rbp\n");
     print!("\tpop r15\n");
     print!("\tpop r14\n");
     print!("\tpop r13\n");
     print!("\tpop r12\n");
+    print!("\tmov rsp, rbp\n");
+    print!("\tpop rbp\n");
     print!("\tret\n");
 
 }

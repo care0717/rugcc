@@ -8,7 +8,7 @@ mod ir;
 mod regalloc;
 mod codegen;
 
-const REGS: [&str; 7] = ["r10", "r11", "r9", "r12", "r13", "r14", "r15"];
+const REGS: [&str; 8] = ["rbp", "r10", "r11", "r9", "r12", "r13", "r14", "r15"];
 
 fn main() {
     let app = App::new("rugcc")

@@ -69,19 +69,19 @@ pub mod common {
         pub name: String,
         pub args: Vec<usize>,
         pub irs: Vec<IR>,
+        pub stack_size: usize,
     }
     impl Default for Function {
         fn default() -> Self {
-            Self { name: String::new(), args: Vec::new(), irs: Vec::new() }
+            Self { name: String::new(), args: Vec::new(), irs: Vec::new(), stack_size: 0 }
         }
     }
 
     #[derive(Clone, Copy, Debug, PartialEq)]
     pub enum IRType {
         IMN,
-        ADD_IMN,
+        SUB_IMN,
         MOV,
-        ALLOCA,
         LABEL,
         UNLESS,
         LOAD,
@@ -154,18 +154,17 @@ pub mod common {
     }
 
     // イケてない
-    static irinfo: [IRInfo; 17] = [
-            IRInfo{op: IRType::Ope('+'), name: "+", ty: IRInfoType::REG_REG},
-            IRInfo{op: IRType::Ope('-'), name: "-", ty: IRInfoType::REG_REG},
-            IRInfo{op: IRType::Ope('*'), name: "*", ty: IRInfoType::REG_REG},
-            IRInfo{op: IRType::Ope('/'), name: "/", ty: IRInfoType::REG_REG},
+    static irinfo: [IRInfo; 16] = [
+            IRInfo{op: IRType::Ope('+'), name: "ADD", ty: IRInfoType::REG_REG},
+            IRInfo{op: IRType::Ope('-'), name: "SUB", ty: IRInfoType::REG_REG},
+            IRInfo{op: IRType::Ope('*'), name: "MUL", ty: IRInfoType::REG_REG},
+            IRInfo{op: IRType::Ope('/'), name: "DIV", ty: IRInfoType::REG_REG},
             IRInfo{op: IRType::IMN, name: "MOV", ty: IRInfoType::REG_IMN},
-            IRInfo{op: IRType::ADD_IMN, name: "ADD", ty: IRInfoType::REG_IMN},
+            IRInfo{op: IRType::SUB_IMN, name: "SUB", ty: IRInfoType::REG_IMN},
             IRInfo{op: IRType::MOV, name: "MOV", ty: IRInfoType::REG_REG},
             IRInfo{op: IRType::LABEL, name: "", ty: IRInfoType::LABEL},
             IRInfo{op: IRType::UNLESS, name: "UNLESS", ty: IRInfoType::REG_LABEL},
             IRInfo{op: IRType::RETURN, name: "RET", ty: IRInfoType::REG},
-            IRInfo{op: IRType::ALLOCA, name: "ALLOCA", ty: IRInfoType::REG_IMN},
             IRInfo{op: IRType::LOAD, name: "LOAD", ty: IRInfoType::REG_REG},
             IRInfo{op: IRType::STORE, name: "STORE", ty: IRInfoType::REG_REG},
             IRInfo{op: IRType::KILL, name: "KILL", ty: IRInfoType::NOARG},
