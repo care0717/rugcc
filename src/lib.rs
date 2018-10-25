@@ -67,13 +67,12 @@ pub mod common {
     #[derive(PartialEq, Debug, Clone)]
     pub struct Function {
         pub name: String,
-        pub args: Vec<usize>,
         pub irs: Vec<IR>,
         pub stack_size: usize,
     }
     impl Default for Function {
         fn default() -> Self {
-            Self { name: String::new(), args: Vec::new(), irs: Vec::new(), stack_size: 0 }
+            Self { name: String::new(), irs: Vec::new(), stack_size: 0 }
         }
     }
 
@@ -111,9 +110,9 @@ pub mod common {
     impl IR {
         pub fn get_irinfo(&self) -> IRInfo {
             // イケてない for info in irinfo と書きたい
-            for i in 0..irinfo.len() {
-                if irinfo[i].op == self.op {
-                    return irinfo[i];
+            for i in 0..IRINFO.len() {
+                if IRINFO[i].op == self.op {
+                    return IRINFO[i];
                 }
             }
             // イケてない 通るはずのない無駄なreturnを書いている
@@ -156,8 +155,7 @@ pub mod common {
         pub ty: IRInfoType,
     }
 
-    // イケてない
-    static irinfo: [IRInfo; 17] = [
+    const IRINFO: [IRInfo; 17] = [
             IRInfo{op: IRType::Ope('+'), name: "ADD", ty: IRInfoType::REG_REG},
             IRInfo{op: IRType::Ope('-'), name: "SUB", ty: IRInfoType::REG_REG},
             IRInfo{op: IRType::Ope('*'), name: "MUL", ty: IRInfoType::REG_REG},
