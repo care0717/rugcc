@@ -103,6 +103,17 @@ fn gen_stmt(node: Node, regno: &mut usize, code: &mut Vec<IR>, vars: &mut HashMa
         _ => error("unknown node: ", Some(&"aa".to_string())),
     }
 }
+fn gen_args(nodes: Vec<Node>, code: &mut Vec<IR>, vars: &mut HashMap<String, usize>, stack_size: &mut usize) {
+    if nodes.len() == 0 {
+        return
+    }
+    add(IRType::SAVE_ARGS, nodes.len(), 0, code);
+    for node in nodes {
+        if node.ty != ND::IDENT {  error("bad parameter", None); }
+        *stack_size += 8;
+        vars.insert(node.val, *stack_size);
+    }
+}
 
 pub fn gen_ir(nodes: Vec<Node>) -> Vec<Function> {
     let mut funcs = Vec::new();
@@ -114,6 +125,7 @@ pub fn gen_ir(nodes: Vec<Node>) -> Vec<Function> {
         let mut label = 0;
         let mut stack_size = 0;
         let name = node.val.clone();
+        gen_args(node.args, &mut code, &mut vars, &mut stack_size);
         gen_stmt(*node.body.unwrap(), &mut regno, &mut code, &mut vars, &mut stack_size, &mut label);
         funcs.push(Function{name, irs: code, stack_size, ..Default::default()})
     }

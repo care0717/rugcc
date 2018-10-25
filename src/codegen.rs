@@ -2,6 +2,9 @@ extern crate rugcc;
 use self::rugcc::common::{IRType, Function};
 use REGS;
 
+
+static ARGREG: [&str; 6] = ["rdi", "rsi", "rdx", "rcx", "r8", "r9"];
+
 fn gen(func: Function, label: usize) {
     let ret = format!(".Lend{}", label);
     if func.name == "main" {
@@ -53,9 +56,8 @@ fn gen(func: Function, label: usize) {
                 }
             },
             IRType::CALL => {
-                let arg = ["rdi", "rsi", "rdx", "rcx", "r8", "r9"];
                 for i in 0..ir.args.clone().len(){
-                    print!("\tmov {}, {}\n", arg[i], REGS[ir.args[i]]);
+                    print!("\tmov {}, {}\n", ARGREG[i], REGS[ir.args[i]]);
                 }
                 print!("\tpush r10\n");
                 print!("\tpush r11\n");
@@ -64,6 +66,11 @@ fn gen(func: Function, label: usize) {
                 print!("\tpop r11\n");
                 print!("\tpop r10\n");
                 print!("\tmov {}, rax\n", REGS[ir.lhs]);
+            },
+            IRType::SAVE_ARGS => {
+                for i in 0..ir.lhs {
+                    print!("\tmov [rbp-{}], {}\n", (i + 1) * 8, ARGREG[i]);
+                }
             },
             IRType::LABEL => print!(".L{}:\n", ir.lhs),
             IRType::UNLESS => {

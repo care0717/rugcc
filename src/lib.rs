@@ -88,6 +88,7 @@ pub mod common {
         STORE,
         RETURN,
         CALL,
+        SAVE_ARGS,
         JMP,
         KILL,
         NOP,
@@ -131,6 +132,7 @@ pub mod common {
                 IRInfoType::REG_LABEL => return format!("{} r{}, .L{}", info.name, self.lhs, self.rhs),
                 IRInfoType::NOARG => return format!("{}", info.name),
                 IRInfoType::CALL => return format!("r{} = {}(", self.lhs, self.name),
+                IRInfoType::IMN => return format!("{} {}\n", info.name, self.lhs),
             }
         }
     }
@@ -144,6 +146,7 @@ pub mod common {
         REG_IMN,
         REG_LABEL,
         CALL,
+        IMN,
     }
 
     #[derive(Clone, Copy, Debug)]
@@ -154,7 +157,7 @@ pub mod common {
     }
 
     // イケてない
-    static irinfo: [IRInfo; 16] = [
+    static irinfo: [IRInfo; 17] = [
             IRInfo{op: IRType::Ope('+'), name: "ADD", ty: IRInfoType::REG_REG},
             IRInfo{op: IRType::Ope('-'), name: "SUB", ty: IRInfoType::REG_REG},
             IRInfo{op: IRType::Ope('*'), name: "MUL", ty: IRInfoType::REG_REG},
@@ -171,6 +174,7 @@ pub mod common {
             IRInfo{op: IRType::NOP, name: "NOP", ty: IRInfoType::NOARG},
             IRInfo{op: IRType::JMP, name: "JMP", ty: IRInfoType::LABEL},
             IRInfo{op: IRType::CALL, name: "CALL", ty: IRInfoType::CALL},
+            IRInfo{op: IRType::SAVE_ARGS, name: "SAVE_ARGS", ty: IRInfoType::IMN},
     ];
 
 

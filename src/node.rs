@@ -175,9 +175,14 @@ fn function(tokens: &mut Vec<Token>) -> Node{
     if token.ty != TK::IDENT {error("function name expected, but got {}", Some(&token.val))}
     expect(TK::OPE('('), tokens);
     let mut node = Node{ty: ND::FUNC, val: token.val, ..Default::default()};
-    while !consume(TK::OPE(')'), tokens){
+    if !consume(TK::OPE(')'), tokens) {
         node.args.push(term(tokens));
+        while consume(TK::OPE(','), tokens){
+            node.args.push(term(tokens));
+        }
+        expect(TK::OPE(')'), tokens);
     }
+
     expect(TK::OPE('{'), tokens);
     node.body = Some(Box::new(compound_stmt(tokens)));
     return node;
