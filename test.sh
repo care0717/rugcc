@@ -42,4 +42,13 @@ runtest 'mul(a, b) { return a * b; } main() { return mul(2, 3); }' 6
 runtest 'add(a,b,c,d,e,f) { return a+b+c+d+e+f; } main() { return add(1,2,3,4,5,6); }' 21
 runtest 'sum(a) { if (a) return a+sum(a-1); return 0; } main() { return sum(10); }' 55
 
+runtest 'main() { return 0||0; }' 0
+runtest 'main() { return 1||0; }' 1
+runtest 'main() { return 0||1; }' 1
+runtest 'main() { return 1||1; }' 1
+runtest 'main() { return 0&&0; }' 0
+runtest 'main() { return 1&&0; }' 0
+runtest 'main() { return 0&&1; }' 0
+runtest 'main() { return 1&&1; }' 1
+
 echo "OK"

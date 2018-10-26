@@ -3,8 +3,8 @@ use self::rugcc::common::{TK, Token, error, ND,  Node};
 
 use std;
 
-fn new_node(op: char, lhs: Node, rhs: Node) -> Node {
-    return Node{ty: ND::OPE(op), lhs: Some(Box::new(lhs)), rhs: Some(Box::new(rhs)), val: op.to_string(), ..Default::default()};
+fn new_node(ty: ND, lhs: Node, rhs: Node) -> Node {
+    return Node{ty, lhs: Some(Box::new(lhs)), rhs: Some(Box::new(rhs)), ..Default::default()};
 }
 
 fn term(tokens: &mut Vec<Token>) -> Node {
@@ -45,7 +45,7 @@ fn expect(ty: TK, tokens: &mut Vec<Token>) {
     return
 }
 
-fn mul(mut tokens: &mut Vec<Token>) -> Node {
+fn mul(tokens: &mut Vec<Token>) -> Node {
     let mut lhs = term(tokens);
     loop {
         let token = tokens.pop();
@@ -55,7 +55,7 @@ fn mul(mut tokens: &mut Vec<Token>) -> Node {
                 match op {
                     TK::OPE(o) => {
                         match o {
-                            '+' | '-' | '*' | '/' => lhs = new_node(o, lhs, term(&mut tokens)),
+                            '+' | '-' | '*' | '/' => lhs = new_node(ND::OPE(o), lhs, term(tokens)),
                             _ => {
                                 tokens.push(t);
                                 break
@@ -75,7 +75,7 @@ fn mul(mut tokens: &mut Vec<Token>) -> Node {
     return lhs;
 }
 
-fn expr(mut tokens: &mut Vec<Token>) -> Node {
+fn add(tokens: &mut Vec<Token>) -> Node {
     let mut lhs = mul(tokens);
     loop {
         let token = tokens.pop();
@@ -85,7 +85,7 @@ fn expr(mut tokens: &mut Vec<Token>) -> Node {
                 match op {
                     TK::OPE(o) => {
                         match o {
-                            '+' | '-' => lhs = new_node(o, lhs, term(&mut tokens)),
+                            '+' | '-' => lhs = new_node(ND::OPE(o), lhs, term(tokens)),
                             _ => {
                                 tokens.push(t);
                                 break
@@ -100,7 +100,50 @@ fn expr(mut tokens: &mut Vec<Token>) -> Node {
             None => break,
         }
     }
+    return lhs;
+}
 
+fn logand(tokens: &mut Vec<Token>) -> Node {
+    let mut lhs = add(tokens);
+    loop {
+        let token = tokens.pop();
+        match token {
+            Some(t) => {
+                let op = t.clone().ty;
+                match op {
+                    TK::LOGAND => {
+                        lhs = new_node(ND::LOGAND, lhs, add(tokens));
+                    },                    _ => {
+                        tokens.push(t);
+                        break
+                    },
+                }
+            },
+            None => break,
+        }
+    }
+    return lhs;
+}
+
+fn logor(tokens: &mut Vec<Token>) -> Node {
+    let mut lhs = logand(tokens);
+    loop {
+        let token = tokens.pop();
+        match token {
+            Some(t) => {
+                let op = t.clone().ty;
+                match op {
+                    TK::LOGOR => {
+                        lhs = new_node(ND::LOGOR, lhs, logand(tokens));
+                    },                    _ => {
+                        tokens.push(t);
+                        break
+                    },
+                }
+            },
+            None => break,
+        }
+    }
     return lhs;
 }
 
@@ -120,9 +163,9 @@ fn consume(ope: TK, tokens: &mut Vec<Token>) -> bool {
 }
 
 fn assign(tokens: &mut Vec<Token>) -> Node {
-    let lhs = expr(tokens);
+    let lhs = logor(tokens);
     if consume(TK::OPE('='), tokens) {
-        return new_node('=', lhs, expr(tokens));
+        return new_node(ND::OPE('='), lhs, logor(tokens));
     } else {
         return lhs;
     }

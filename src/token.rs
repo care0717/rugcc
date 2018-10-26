@@ -13,11 +13,33 @@ pub fn tokenize(s: Vec<char>) -> Vec<Token>{
             counter += 1;
             continue;
         }
-        let opes: Vec<char> = "+-*/=(),{}".chars().collect();
+        let opes: Vec<char> = "+-*/=(),{}&|".chars().collect();
         if opes.contains(&c) {
-            tokens.push(Token{ty: TK::OPE(c), val: c.to_string()});
-            counter += 1;
-            continue;
+            if c=='&' {
+                counter += 1;
+                if s[counter] == '&' {
+                    tokens.push(Token{ty: TK::LOGAND, val: "&&".to_string()});
+                    counter += 1;
+                    continue;
+                } else {
+                    print!("cannot tokenize: {}\n", c);
+                    process::exit(1);
+                }
+            } else if c=='|' {
+                counter += 1;
+                if s[counter] == '|' {
+                    tokens.push(Token{ty: TK::LOGOR, val: "||".to_string()});
+                    counter += 1;
+                    continue;
+                } else {
+                    print!("cannot tokenize: {}\n", c);
+                    process::exit(1);
+                }
+            } else {
+                tokens.push(Token{ty: TK::OPE(c), val: c.to_string()});
+                counter += 1;
+                continue;
+            }
         }
         if c==';' {
             tokens.push(Token{ty: TK::END_LINE, val: c.to_string()});

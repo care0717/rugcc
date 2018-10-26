@@ -11,6 +11,8 @@ pub mod common {
         IDENT,
         IF,
         ELSE,
+        LOGOR,
+        LOGAND,
         END_LINE,
     }
 
@@ -28,6 +30,8 @@ pub mod common {
         OPE(char),
         IDENT,
         IF,
+        LOGOR,
+        LOGAND,
         RETURN,
         COMP_STMT,
         EXPR_STMT,
@@ -132,6 +136,7 @@ pub mod common {
                 IRInfoType::NOARG => return format!("{}", info.name),
                 IRInfoType::CALL => return format!("r{} = {}(", self.lhs, self.name),
                 IRInfoType::IMN => return format!("{} {}\n", info.name, self.lhs),
+                IRInfoType::JMP => return format!("  {} .L{}", info.name, self.lhs),
             }
         }
     }
@@ -146,6 +151,7 @@ pub mod common {
         REG_LABEL,
         CALL,
         IMN,
+        JMP,
     }
 
     #[derive(Clone, Copy, Debug)]
@@ -156,23 +162,23 @@ pub mod common {
     }
 
     const IRINFO: [IRInfo; 17] = [
-            IRInfo{op: IRType::Ope('+'), name: "ADD", ty: IRInfoType::REG_REG},
-            IRInfo{op: IRType::Ope('-'), name: "SUB", ty: IRInfoType::REG_REG},
-            IRInfo{op: IRType::Ope('*'), name: "MUL", ty: IRInfoType::REG_REG},
-            IRInfo{op: IRType::Ope('/'), name: "DIV", ty: IRInfoType::REG_REG},
-            IRInfo{op: IRType::IMN, name: "MOV", ty: IRInfoType::REG_IMN},
-            IRInfo{op: IRType::SUB_IMN, name: "SUB", ty: IRInfoType::REG_IMN},
-            IRInfo{op: IRType::MOV, name: "MOV", ty: IRInfoType::REG_REG},
-            IRInfo{op: IRType::LABEL, name: "", ty: IRInfoType::LABEL},
-            IRInfo{op: IRType::UNLESS, name: "UNLESS", ty: IRInfoType::REG_LABEL},
-            IRInfo{op: IRType::RETURN, name: "RET", ty: IRInfoType::REG},
-            IRInfo{op: IRType::LOAD, name: "LOAD", ty: IRInfoType::REG_REG},
-            IRInfo{op: IRType::STORE, name: "STORE", ty: IRInfoType::REG_REG},
-            IRInfo{op: IRType::KILL, name: "KILL", ty: IRInfoType::NOARG},
-            IRInfo{op: IRType::NOP, name: "NOP", ty: IRInfoType::NOARG},
-            IRInfo{op: IRType::JMP, name: "JMP", ty: IRInfoType::LABEL},
-            IRInfo{op: IRType::CALL, name: "CALL", ty: IRInfoType::CALL},
-            IRInfo{op: IRType::SAVE_ARGS, name: "SAVE_ARGS", ty: IRInfoType::IMN},
+        IRInfo{op: IRType::Ope('+'), name: "ADD", ty: IRInfoType::REG_REG},
+        IRInfo{op: IRType::Ope('-'), name: "SUB", ty: IRInfoType::REG_REG},
+        IRInfo{op: IRType::Ope('*'), name: "MUL", ty: IRInfoType::REG_REG},
+        IRInfo{op: IRType::Ope('/'), name: "DIV", ty: IRInfoType::REG_REG},
+        IRInfo{op: IRType::IMN, name: "MOV", ty: IRInfoType::REG_IMN},
+        IRInfo{op: IRType::SUB_IMN, name: "SUB", ty: IRInfoType::REG_IMN},
+        IRInfo{op: IRType::MOV, name: "MOV", ty: IRInfoType::REG_REG},
+        IRInfo{op: IRType::LABEL, name: "", ty: IRInfoType::LABEL},
+        IRInfo{op: IRType::UNLESS, name: "UNLESS", ty: IRInfoType::REG_LABEL},
+        IRInfo{op: IRType::RETURN, name: "RET", ty: IRInfoType::REG},
+        IRInfo{op: IRType::LOAD, name: "LOAD", ty: IRInfoType::REG_REG},
+        IRInfo{op: IRType::STORE, name: "STORE", ty: IRInfoType::REG_REG},
+        IRInfo{op: IRType::KILL, name: "KILL", ty: IRInfoType::NOARG},
+        IRInfo{op: IRType::NOP, name: "NOP", ty: IRInfoType::NOARG},
+        IRInfo{op: IRType::JMP, name: "JMP", ty: IRInfoType::JMP},
+        IRInfo{op: IRType::CALL, name: "CALL", ty: IRInfoType::CALL},
+        IRInfo{op: IRType::SAVE_ARGS, name: "SAVE_ARGS", ty: IRInfoType::IMN},
     ];
 
 

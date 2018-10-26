@@ -25,51 +25,92 @@ fn gen_lval(node: Node, regno: &mut usize, code: &mut Vec<IR>, vars: &mut HashMa
     return r;
 }
 
-fn gen_expr(node: Node, regno: &mut usize, code: &mut Vec<IR>, vars: &mut HashMap<String, usize>, stack_size: &mut usize) -> usize {
-    if node.ty == ND::NUM {
-        let r = *regno;
-        *regno += 1;
-        add(IRType::IMN, r, node.val.parse().unwrap(), code);
-        return r
-    } else if node.ty == ND::IDENT {
-        let r = gen_lval(node, regno, code, vars, stack_size);
-        add(IRType::LOAD, r, r, code);
-        return r
-    } else if node.ty == ND::CALL {
-        let mut args = Vec::new();
-        for n  in node.args {
-            args.push(gen_expr(n, regno, code, vars, stack_size));
-        }
-        let r = *regno;
-        *regno += 1;
+fn gen_expr(node: Node, regno: &mut usize, code: &mut Vec<IR>, vars: &mut HashMap<String, usize>, stack_size: &mut usize, label: &mut usize) -> usize {
+    match node.ty {
+        ND::NUM => {
+            let r = *regno;
+            *regno += 1;
+            add(IRType::IMN, r, node.val.parse().unwrap(), code);
+            return r
+        },
+        ND::IDENT => {
+            let r = gen_lval(node, regno, code, vars, stack_size);
+            add(IRType::LOAD, r, r, code);
+            return r
+        },
+        ND::LOGAND => {
+            let x = *label;
+            *label += 1;
+            let r1 = gen_expr(*node.lhs.unwrap(), regno, code, vars, stack_size, label);
+            add(IRType::UNLESS, r1, x, code);
+            let r2 = gen_expr(*node.rhs.unwrap(), regno, code, vars, stack_size, label);
+            add(IRType::MOV, r1, r2, code);
+            add(IRType::KILL, r2, 0, code);
+            add(IRType::UNLESS, r1, x, code);
+            add(IRType::IMN, r1, 1, code);
+            add(IRType::LABEL, x, 0, code);
+            return r1
+        },
+        ND::LOGOR => {
+            let x = *label;
+            *label += 1;
+            let y = *label;
+            *label += 1;
 
-        let ir = IR { op: IRType::CALL, lhs: r, rhs: 0, name: node.val, args, ..Default::default()};
-        code.push(ir.clone());
-        for i in ir.args {
-            add(IRType::KILL, i, 0, code);
+            let r1 = gen_expr(*node.lhs.unwrap(), regno, code, vars, stack_size, label);
+            add(IRType::UNLESS, r1, x, code);
+            add(IRType::IMN, r1, 1, code);
+            add(IRType::JMP, y, 0, code);
+            add(IRType::LABEL, x, 0, code);
+
+            let r2 = gen_expr(*node.rhs.unwrap(), regno, code, vars, stack_size, label);
+            add(IRType::MOV, r1, r2, code);
+            add(IRType::KILL, r2, 0, code);
+            add(IRType::UNLESS, r1, y, code);
+            add(IRType::IMN, r1, 1, code);
+            add(IRType::LABEL, y, 0, code);
+            return r1;
+
+        },
+        ND::CALL => {
+            let mut args = Vec::new();
+            for n in node.args {
+                args.push(gen_expr(n, regno, code, vars, stack_size, label));
+            }
+            let r = *regno;
+            *regno += 1;
+
+            let ir = IR { op: IRType::CALL, lhs: r, rhs: 0, name: node.val, args, ..Default::default() };
+            code.push(ir.clone());
+            for i in ir.args {
+                add(IRType::KILL, i, 0, code);
+            }
+            return r
+        },
+        ND::OPE('=') => {
+            let rhs = gen_expr(*node.rhs.unwrap(), regno, code, vars, stack_size, label);
+            let lhs = gen_lval(*node.lhs.unwrap(), regno, code, vars, stack_size);
+            add(IRType::STORE, lhs, rhs, code);
+            add(IRType::KILL, rhs, 0, code);
+            return lhs
+        },
+        _ => {
+            let ope = node.get_ope();
+            *regno += 1;
+            let lhs = gen_expr(*node.lhs.unwrap(), regno, code, vars, stack_size, label);
+            *regno += lhs;
+            let rhs = gen_expr(*node.rhs.unwrap(), regno, code, vars, stack_size, label);
+            add(IRType::Ope(ope), lhs, rhs, code);
+            add(IRType::KILL, rhs, 0, code);
+            return lhs
         }
-        return r
-    } else if node.ty == ND::OPE('=') {
-        let rhs = gen_expr(*node.rhs.unwrap(), regno, code, vars, stack_size);
-        let lhs = gen_lval(*node.lhs.unwrap(), regno, code, vars, stack_size);
-        add(IRType::STORE, lhs, rhs, code);
-        add(IRType::KILL, rhs, 0, code);
-        return lhs
     }
-    let ope = node.get_ope();
-    *regno += 1;
-    let lhs = gen_expr(*node.lhs.unwrap(), regno, code, vars, stack_size);
-    *regno += lhs;
-    let rhs = gen_expr(*node.rhs.unwrap(), regno, code, vars, stack_size);
-    add(IRType::Ope(ope), lhs, rhs, code);
-    add(IRType::KILL, rhs, 0, code);
-    return lhs
 }
 
 fn gen_stmt(node: Node, regno: &mut usize, code: &mut Vec<IR>, vars: &mut HashMap<String, usize>, stack_size: &mut usize, label: &mut usize) {
     match node.ty {
         ND::IF => {
-            let r = gen_expr(*node.cond.unwrap(), regno, code, vars, stack_size);
+            let r = gen_expr(*node.cond.unwrap(), regno, code, vars, stack_size, label);
             let x = *label;
             *label += 1;
             add(IRType::UNLESS, r, x, code);
@@ -87,12 +128,12 @@ fn gen_stmt(node: Node, regno: &mut usize, code: &mut Vec<IR>, vars: &mut HashMa
             add(IRType::LABEL, y, 0, code);
         },
         ND::RETURN => {
-            let r = gen_expr(*node.expr.unwrap(), regno, code, vars, stack_size);
+            let r = gen_expr(*node.expr.unwrap(), regno, code, vars, stack_size, label);
             add(IRType::RETURN, r, 0, code);
             add(IRType::KILL, r, 0, code);
         },
         ND::EXPR_STMT => {
-            let r = gen_expr(*node.expr.unwrap(), regno, code, vars, stack_size);
+            let r = gen_expr(*node.expr.unwrap(), regno, code, vars, stack_size, label);
             add(IRType::KILL, r, 0, code);
         },
         ND::COMP_STMT => {
