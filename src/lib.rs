@@ -95,6 +95,7 @@ pub mod common {
         JMP,
         KILL,
         NOP,
+        LT,
         Ope(char),
     }
 
@@ -161,7 +162,7 @@ pub mod common {
         pub ty: IRInfoType,
     }
 
-    const IRINFO: [IRInfo; 17] = [
+    const IRINFO: [IRInfo; 18] = [
         IRInfo{op: IRType::Ope('+'), name: "ADD", ty: IRInfoType::REG_REG},
         IRInfo{op: IRType::Ope('-'), name: "SUB", ty: IRInfoType::REG_REG},
         IRInfo{op: IRType::Ope('*'), name: "MUL", ty: IRInfoType::REG_REG},
@@ -174,6 +175,7 @@ pub mod common {
         IRInfo{op: IRType::RETURN, name: "RET", ty: IRInfoType::REG},
         IRInfo{op: IRType::LOAD, name: "LOAD", ty: IRInfoType::REG_REG},
         IRInfo{op: IRType::STORE, name: "STORE", ty: IRInfoType::REG_REG},
+        IRInfo{op: IRType::LT, name: "LT", ty: IRInfoType::REG_REG},
         IRInfo{op: IRType::KILL, name: "KILL", ty: IRInfoType::NOARG},
         IRInfo{op: IRType::NOP, name: "NOP", ty: IRInfoType::NOARG},
         IRInfo{op: IRType::JMP, name: "JMP", ty: IRInfoType::JMP},

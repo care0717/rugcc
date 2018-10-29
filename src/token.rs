@@ -13,7 +13,7 @@ pub fn tokenize(s: Vec<char>) -> Vec<Token>{
             counter += 1;
             continue;
         }
-        let opes: Vec<char> = "+-*/=(),{}&|".chars().collect();
+        let opes: Vec<char> = "+-*/=(),{}&|<>".chars().collect();
         if opes.contains(&c) {
             if c=='&' {
                 counter += 1;

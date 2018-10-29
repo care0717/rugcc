@@ -1,6 +1,6 @@
 extern crate rugcc;
 use self::rugcc::common::{IRType, Function};
-use REGS;
+use {REGS, REGS8};
 
 
 static ARGREG: [&str; 6] = ["rdi", "rsi", "rdx", "rcx", "r8", "r9"];
@@ -72,6 +72,11 @@ fn gen(func: Function, label: usize) {
                     print!("\tmov [rbp-{}], {}\n", (i + 1) * 8, ARGREG[i]);
                 }
             },
+            IRType::LT => {
+                print!("\tcmp {}, {}\n", REGS[ir.lhs], REGS[ir.rhs]);
+                print!("\tsetl {}\n", REGS8[ir.lhs]);
+                print!("\tmovzx {}, {}\n", REGS[ir.lhs], REGS8[ir.lhs]);
+            }
             IRType::LABEL => print!(".L{}:\n", ir.lhs),
             IRType::UNLESS => {
                 print!("\tcmp {}, 0\n", REGS[ir.lhs]);

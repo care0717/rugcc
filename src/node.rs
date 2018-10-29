@@ -103,7 +103,7 @@ fn add(tokens: &mut Vec<Token>) -> Node {
     return lhs;
 }
 
-fn logand(tokens: &mut Vec<Token>) -> Node {
+fn rel(tokens: &mut Vec<Token>) -> Node {
     let mut lhs = add(tokens);
     loop {
         let token = tokens.pop();
@@ -111,8 +111,34 @@ fn logand(tokens: &mut Vec<Token>) -> Node {
             Some(t) => {
                 let op = t.clone().ty;
                 match op {
+                    TK::OPE('<') => {
+                        lhs = new_node(ND::OPE('<'), lhs, add(tokens));
+                    },
+                    TK::OPE('>') => {
+                        lhs = new_node(ND::OPE('<'), add(tokens), lhs);
+                    },
+                    _ => {
+                        tokens.push(t);
+                        break
+                    },
+                }
+            },
+            None => break,
+        }
+    }
+    return lhs;
+}
+
+fn logand(tokens: &mut Vec<Token>) -> Node {
+    let mut lhs = rel(tokens);
+    loop {
+        let token = tokens.pop();
+        match token {
+            Some(t) => {
+                let op = t.clone().ty;
+                match op {
                     TK::LOGAND => {
-                        lhs = new_node(ND::LOGAND, lhs, add(tokens));
+                        lhs = new_node(ND::LOGAND, lhs, rel(tokens));
                     },                    _ => {
                         tokens.push(t);
                         break

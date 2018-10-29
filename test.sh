@@ -3,7 +3,7 @@
 runtest() {
     ./target/debug/rugcc "$1" > ./tmp.s
     echo 'int plus(int x, int y) { return x + y; }' | gcc -xc -c -o ./tmp-plus.o -
-    gcc  -o ./tmp.exe ./tmp.s ./tmp-plus.o
+    cc  -o ./tmp.exe ./tmp.s ./tmp-plus.o
     ./tmp.exe
     out=$?
     if [ "$out" != "$2" ]; then
@@ -53,5 +53,12 @@ runtest 'main() { return 0&&0; }' 0
 runtest 'main() { return 1&&0; }' 0
 runtest 'main() { return 0&&1; }' 0
 runtest 'main() { return 1&&1; }' 1
+
+runtest 'main() { return 0<0; }' 0
+runtest 'main() { return 1<0; }' 0
+runtest 'main() { return 0<1; }' 1
+runtest 'main() { return 0>0; }' 0
+runtest 'main() { return 0>1; }' 0
+runtest 'main() { return 1>0; }' 1
 
 echo "OK"

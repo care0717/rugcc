@@ -9,11 +9,13 @@ mod regalloc;
 mod codegen;
 
 const REGS: [&str; 8] = ["rbp", "r10", "r11", "r9", "r12", "r13", "r14", "r15"];
+const REGS8: [&str; 8] = ["bpl", "r10b", "r11b", "bl", "r12b", "r13b", "r14b", "r15b"];
+
 
 fn main() {
     let app = App::new("rugcc")
         .version("0.0.1")
-        .author("asai ")
+        .author("care0717")
         .about("Toy clang compiler")
         .arg(Arg::with_name("code")
             .help("enter code")
@@ -31,9 +33,12 @@ fn main() {
     let dump_ir2 = matches.is_present("dump-ir2");
 
     let mut tokens = token::tokenize(input.chars().collect());
-    //eprintln!("{:?}", tokens);
-    let mut fns = ir::gen_ir(node::parse(&mut tokens));
-    //eprintln!("{:?}", node);
+
+    let nodes =  node::parse(&mut tokens);
+    //eprintln!("{:?}", nodes);
+    let mut fns = ir::IrGenerator::new().gen_ir(nodes);
+    //eprintln!("{:?}", fns);
+
     if dump_ir1 {dump_ir(&fns)}
     //eprintln!("{:?}", irs);
     regalloc::alloc_regs(&mut fns);
