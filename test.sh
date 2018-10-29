@@ -1,7 +1,6 @@
 #!/bin/bash
 
 runtest() {
-    cargo build
     ./target/debug/rugcc "$1" > tmp.s
     echo 'int plus(int x, int y) { return x + y; }' | gcc -xc -c -o tmp-plus.o -
     cc  -o tmp.exe tmp.s tmp-plus.o
@@ -16,6 +15,11 @@ runtest() {
     echo "$1 => $2"
     rm -f tmp*
 }
+
+cargo build && cargo test
+if [ $? != "0" ]; then
+    exit 1
+fi
 
 runtest 'main() { return 128; }' 128
 runtest 'main() { return 2+3; }' 5

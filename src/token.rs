@@ -78,3 +78,29 @@ pub fn tokenize(s: Vec<char>) -> Vec<Token>{
     tokens.reverse();
     return tokens
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    # [test]
+    fn can_tokenize() {
+        let input = "main() {return 51;}".chars().collect();
+
+        let result = tokenize(input);
+        let expect = [
+            Token{ty: TK::EOF, val: "EOF".to_string()},
+            Token { ty: TK::OPE('}'), val: "}".to_string() },
+            Token{ty: TK::END_LINE, val: ";".to_string()},
+            Token { ty: TK::NUM, val: "51".to_string() },
+            Token { ty: TK::RETURN, val: "return".to_string() },
+            Token { ty: TK::OPE('{'), val: "{".to_string() },
+            Token { ty: TK::OPE(')'), val: ")".to_string() },
+            Token { ty: TK::OPE('('), val: "(".to_string() },
+            Token { ty: TK::IDENT, val: "main".to_string() }];
+
+        assert_eq!(result.len(), expect.len());
+        for i in 0..result.len() {
+            assert_eq!(result[i], expect[i]);
+        }
+    }
+}

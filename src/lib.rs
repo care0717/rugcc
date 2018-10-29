@@ -16,13 +16,13 @@ pub mod common {
         END_LINE,
     }
 
-    #[derive(Debug, Clone)]
+    #[derive(Debug, Clone, PartialEq)]
     pub struct Token {
         pub ty: TK,
         pub val: String,
     }
 
-    #[derive(PartialEq, Debug)]
+    #[derive(PartialEq, Debug, Clone)]
     pub enum ND {
         NUM,
         CALL,
@@ -37,7 +37,7 @@ pub mod common {
         EXPR_STMT,
     }
 
-    #[derive(Debug)]
+    #[derive(Debug, PartialEq, Clone)]
     pub struct Node {
         pub ty: ND,
         pub lhs: Option<Box<Node>>,

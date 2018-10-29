@@ -241,3 +241,47 @@ pub fn parse(tokens: &mut Vec<Token>) -> Vec<Node> {
     }
     return nodes
 }
+
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    # [test]
+    fn can_parse() {
+        let input = [
+            Token{ty: TK::EOF, val: "EOF".to_string()},
+            Token { ty: TK::OPE('}'), val: "}".to_string() },
+            Token{ty: TK::END_LINE, val: ";".to_string()},
+            Token { ty: TK::NUM, val: "51".to_string() },
+            Token { ty: TK::RETURN, val: "return".to_string() },
+            Token { ty: TK::OPE('{'), val: "{".to_string() },
+            Token { ty: TK::OPE(')'), val: ")".to_string() },
+            Token { ty: TK::OPE('('), val: "(".to_string() },
+            Token { ty: TK::IDENT, val: "main".to_string() }];
+
+        let result = parse(&mut input.to_vec());
+        let expect = [
+            Node {
+                ty: ND::FUNC,
+                val: "main".to_string(),
+                body: Some(Box::new(Node {
+                    ty: ND::COMP_STMT,
+                    stmts: [
+                        Node {
+                            ty: ND::RETURN,
+                            expr: Some(Box::new(Node {
+                                ty: ND::NUM,
+                                val: "51".to_string(), ..Default::default()})),
+                            ..Default::default()
+                        }].to_vec(),
+                    ..Default::default() })),
+                ..Default::default()
+            }
+        ];
+
+        assert_eq!(result.len(), expect.len());
+        for i in 0..result.len() {
+            assert_eq!(result[i], expect[i]);
+        }
+    }
+}

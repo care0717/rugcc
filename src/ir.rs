@@ -173,3 +173,46 @@ pub fn gen_ir(nodes: Vec<Node>) -> Vec<Function> {
     return funcs
 }
 
+#[cfg(test)]
+mod tests {
+    use super::*;
+    # [test]
+    fn can_gen_ir() {
+        let input = [
+            Node {
+                ty: ND::FUNC,
+                val: "main".to_string(),
+                body: Some(Box::new(Node {
+                    ty: ND::COMP_STMT,
+                    stmts: [
+                        Node {
+                            ty: ND::RETURN,
+                            expr: Some(Box::new(Node {
+                                ty: ND::NUM,
+                                val: "51".to_string(), ..Default::default()})),
+                            ..Default::default()
+                        }].to_vec(),
+                    ..Default::default() })),
+                ..Default::default()
+            }
+        ];
+
+        let result = gen_ir(input.to_vec());
+        let expect = [
+            Function {
+                name: "main".to_string(),
+                irs: [
+                    IR { op: IRType::IMN, lhs: 1, rhs: 51, ..Default::default() },
+                    IR { op: IRType::RETURN, lhs: 1, rhs: 0, ..Default::default() },
+                    IR { op: IRType::KILL, lhs: 1, rhs: 0, ..Default::default() }
+                ].to_vec(),
+                stack_size: 0
+            }
+        ];
+
+        assert_eq!(result.len(), expect.len());
+        for i in 0..result.len() {
+            assert_eq!(result[i], expect[i]);
+        }
+    }
+}

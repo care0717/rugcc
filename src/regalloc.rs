@@ -70,3 +70,41 @@ pub fn alloc_regs(fns: &mut Vec<Function>) {
         visit(&mut f.irs, &mut reg_map, &mut used);
     }
 }
+
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    # [test]
+    fn can_alloc() {
+        let mut input = [
+            Function {
+                name: "main".to_string(),
+                irs: [
+                    IR { op: IRType::IMN, lhs: 1, rhs: 51, ..Default::default() },
+                    IR { op: IRType::RETURN, lhs: 1, rhs: 0, ..Default::default() },
+                    IR { op: IRType::KILL, lhs: 1, rhs: 0, ..Default::default() }
+                ].to_vec(),
+                stack_size: 0
+            }
+        ].to_vec();
+
+        alloc_regs(&mut input);
+        let expect = [
+            Function {
+                name: "main".to_string(),
+                irs: [
+                    IR { op: IRType::IMN, lhs: 1, rhs: 51, ..Default::default() },
+                    IR { op: IRType::RETURN, lhs: 1, rhs: 0, ..Default::default() },
+                    IR { op: IRType::NOP, lhs: 1, rhs: 0, ..Default::default() }
+                ].to_vec(),
+                stack_size: 0
+            }
+        ];
+
+        assert_eq!(input.len(), expect.len());
+        for i in 0..input.len() {
+            assert_eq!(input[i], expect[i]);
+        }
+    }
+}
