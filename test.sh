@@ -1,19 +1,18 @@
 #!/bin/bash
 
 runtest() {
-    ./target/debug/rugcc "$1" > tmp.s
-    echo 'int plus(int x, int y) { return x + y; }' | gcc -xc -c -o tmp-plus.o -
-    cc  -o tmp.exe tmp.s tmp-plus.o
-
+    ./target/debug/rugcc "$1" > ./tmp.s
+    echo 'int plus(int x, int y) { return x + y; }' | gcc -xc -c -o ./tmp-plus.o -
+    gcc  -o ./tmp.exe ./tmp.s ./tmp-plus.o
     ./tmp.exe
     out=$?
     if [ "$out" != "$2" ]; then
         echo "$1: $2 expected. but got $out"
-        rm -f tmp*
+        rm -f ./tmp*
         exit 1
     fi
     echo "$1 => $2"
-    rm -f tmp*
+    rm -f ./tmp*
 }
 
 cargo build && cargo test

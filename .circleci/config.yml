@@ -1,0 +1,21 @@
+version: 2
+jobs:
+  build:
+    docker:
+      - image: circleci/rust:latest
+    working_directory: ~/repo
+    steps:
+      - checkout
+      - restore_cache:
+          key: project-cache-{{ checksum "Cargo.toml" }}
+      - run:
+          name: Build
+          command: cargo build
+      - save_cache:
+          key: project-cache-{{ checksum "Cargo.toml" }}
+          paths:
+            - "~/.cargo"
+            - "./target"
+      - run:
+          name: Test
+          command: cargo test
