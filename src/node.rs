@@ -9,30 +9,35 @@ fn new_node(ty: ND, lhs: Node, rhs: Node) -> Node {
 
 fn term(tokens: &mut Vec<Token>) -> Node {
     let token = tokens.pop().unwrap();
-    if token.ty == TK::OPE('(') {
-        let node = assign(tokens);
-        expect(TK::OPE(')'), tokens);
-        return node
-    }
 
-    if token.ty !=  TK::NUM && token.ty !=  TK::IDENT {
-        error("number expected, but got ", Some(&token.val))
-    }
-    if token.ty == TK::NUM {
-        return Node{ty: ND::NUM, val: token.val, ..Default::default()};
-    } else {
-        let mut node = Node{ty: ND::IDENT, val: token.val, ..Default::default()};
-        if !consume(TK::OPE('('), tokens) {
+    match token.ty {
+        TK::OPE('(') => {
+            let node = assign(tokens);
+            expect(TK::OPE(')'), tokens);
             return node
-        }
-        node.ty = ND::CALL;
-        if consume(TK::OPE(')'), tokens) {return node}
-        node.args.push(assign(tokens));
-        while consume(TK::OPE(','), tokens) {
+        },
+        TK::NUM => {
+            return Node{ty: ND::NUM, val: token.val, ..Default::default()};
+        },
+        TK::IDENT => {
+            let mut node = Node{ty: ND::IDENT, val: token.val, ..Default::default()};
+            if !consume(TK::OPE('('), tokens) {
+                return node
+            }
+            node.ty = ND::CALL;
+            if consume(TK::OPE(')'), tokens) {return node}
             node.args.push(assign(tokens));
-        }
-        expect(TK::OPE(')'), tokens);
-        return node
+            while consume(TK::OPE(','), tokens) {
+                node.args.push(assign(tokens));
+            }
+            expect(TK::OPE(')'), tokens);
+            return node
+        },
+        _ => {
+            error("number expected, but got ", Some(&token.val));
+            // イケてない　通るはずのないreturn
+            return Node{ty: ND::NUM, val: token.val, ..Default::default()}
+        },
     }
 }
 
@@ -48,56 +53,44 @@ fn expect(ty: TK, tokens: &mut Vec<Token>) {
 fn mul(tokens: &mut Vec<Token>) -> Node {
     let mut lhs = term(tokens);
     loop {
-        let token = tokens.pop();
-        match token {
-            Some(t) => {
-                let op = t.clone().ty;
-                match op {
-                    TK::OPE(o) => {
-                        match o {
-                            '+' | '-' | '*' | '/' => lhs = new_node(ND::OPE(o), lhs, term(tokens)),
-                            _ => {
-                                tokens.push(t);
-                                break
-                            },
-                        }
-                    },
+        let token = tokens.pop().unwrap();
+        match token.ty {
+            TK::OPE(o) => {
+                match o {
+                    '*' | '/' => lhs = new_node(ND::OPE(o), lhs, term(tokens)),
                     _ => {
-                        tokens.push(t);
+                        tokens.push(token);
                         break
                     },
                 }
             },
-            None => break,
+            _ => {
+                tokens.push(token);
+                break
+            },
         }
     }
-
     return lhs;
 }
 
 fn add(tokens: &mut Vec<Token>) -> Node {
     let mut lhs = mul(tokens);
     loop {
-        let token = tokens.pop();
-        match token {
-            Some(t) => {
-                let op = t.clone().ty;
-                match op {
-                    TK::OPE(o) => {
-                        match o {
-                            '+' | '-' => lhs = new_node(ND::OPE(o), lhs, term(tokens)),
-                            _ => {
-                                tokens.push(t);
-                                break
-                            },
-                        }
-                    },                    _ => {
-                        tokens.push(t);
+        let token = tokens.pop().unwrap();
+        match token.ty {
+            TK::OPE(o) => {
+                match o {
+                    '+' | '-' => lhs = new_node(ND::OPE(o), lhs, mul(tokens)),
+                    _ => {
+                        tokens.push(token);
                         break
                     },
                 }
             },
-            None => break,
+            _ => {
+                tokens.push(token);
+                break
+            },
         }
     }
     return lhs;
