@@ -183,7 +183,6 @@ impl IrGenerator {
             self.code= Vec::new();
             self.regno = 1;
             self.vars = HashMap::new();
-            self.label = 0;
             self.stack_size = 0;
             let name = node.val.clone();
             self.gen_args(node.args);
