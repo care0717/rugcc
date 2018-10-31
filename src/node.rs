@@ -204,6 +204,13 @@ fn stmt(tokens: &mut Vec<Token>) -> Node {
             if consume(TK::ELSE, tokens) {node.els = Some(Box::new(stmt(tokens)));}
             return node
         },
+        TK::OPE('{') => {
+            node.ty = ND::COMP_STMT;
+            while !consume(TK::OPE('}'), tokens) {
+                node.stmts.push(stmt(tokens));
+            }
+            return node;
+        },
         TK::FOR => {
             node.ty = ND::FOR;
             expect(TK::OPE('('), tokens);
