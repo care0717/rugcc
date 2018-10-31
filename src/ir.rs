@@ -31,7 +31,7 @@ impl IrGenerator {
         let r = self.regno;
         self.regno += 1;
         self.add(IRType::MOV, r, 0);
-        self.code.push(IR { op: IRType::SUB_IMN, lhs: r, rhs: off, ..Default::default()});
+        self.code.push(IR { op: IRType::SUB_IMM, lhs: r, rhs: off, ..Default::default()});
         return r;
     }
 
@@ -49,7 +49,7 @@ impl IrGenerator {
             ND::NUM => {
                 let r = self.regno;
                 self.regno += 1;
-                self.add(IRType::IMN, r, node.val.parse().unwrap());
+                self.add(IRType::IMM, r, node.val.parse().unwrap());
                 return r
             },
             ND::IDENT => {
@@ -66,7 +66,7 @@ impl IrGenerator {
                 self.add(IRType::MOV, r1, r2);
                 self.add(IRType::KILL, r2, 0);
                 self.add(IRType::UNLESS, r1, x);
-                self.add(IRType::IMN, r1, 1);
+                self.add(IRType::IMM, r1, 1);
                 self.add(IRType::LABEL, x, 0);
                 return r1
             },
@@ -78,7 +78,7 @@ impl IrGenerator {
 
                 let r1 = self.gen_expr(*node.lhs.unwrap());
                 self.add(IRType::UNLESS, r1, x);
-                self.add(IRType::IMN, r1, 1);
+                self.add(IRType::IMM, r1, 1);
                 self.add(IRType::JMP, y, 0);
                 self.add(IRType::LABEL, x, 0);
 
@@ -86,7 +86,7 @@ impl IrGenerator {
                 self.add(IRType::MOV, r1, r2);
                 self.add(IRType::KILL, r2, 0);
                 self.add(IRType::UNLESS, r1, y);
-                self.add(IRType::IMN, r1, 1);
+                self.add(IRType::IMM, r1, 1);
                 self.add(IRType::LABEL, y, 0);
                 return r1;
             },
@@ -130,6 +130,18 @@ impl IrGenerator {
             ND::VARDEF => {
                 self.stack_size += 8;
                 self.vars.insert(node.val, self.stack_size);
+
+                if node.init.is_none() { return }
+
+                let rhs = self.gen_expr(*node.init.unwrap());
+                let lhs = self.regno;
+                self.regno += 1;
+                self.add(IRType::MOV, lhs, 0);
+                let ss = self.stack_size;
+                self.add(IRType::SUB_IMM, lhs, ss);
+                self.add(IRType::STORE, lhs, rhs);
+                self.add(IRType::KILL, lhs, 0);
+                self.add(IRType::KILL, rhs, 0);
             },
             ND::IF => {
                 let r = self.gen_expr(*node.cond.unwrap());
@@ -266,17 +278,17 @@ mod tests {
             Function {
                 name: "main".to_string(),
                 irs: [
-                    IR { op: IRType::IMN, lhs: 1, rhs: 2, ..Default::default()},
-                    IR { op: IRType::IMN, lhs: 2, rhs: 2, ..Default::default() },
-                    IR { op: IRType::IMN, lhs: 3, rhs: 3, ..Default::default() },
+                    IR { op: IRType::IMM, lhs: 1, rhs: 2, ..Default::default()},
+                    IR { op: IRType::IMM, lhs: 2, rhs: 2, ..Default::default() },
+                    IR { op: IRType::IMM, lhs: 3, rhs: 3, ..Default::default() },
                     IR { op: IRType::Ope('*'), lhs: 2, rhs: 3, ..Default::default() },
                     IR { op: IRType::KILL, lhs: 3, ..Default::default() },
                     IR { op: IRType::Ope('+'), lhs: 1, rhs: 2, ..Default::default() },
                     IR { op: IRType::KILL, lhs: 2, ..Default::default() },
-                    IR { op: IRType::IMN, lhs: 4, rhs: 2, ..Default::default() },
+                    IR { op: IRType::IMM, lhs: 4, rhs: 2, ..Default::default() },
                     IR { op: IRType::Ope('/'), lhs: 1, rhs: 4, ..Default::default() },
                     IR { op: IRType::KILL, lhs: 4, ..Default::default() },
-                    IR { op: IRType::IMN, lhs: 5, rhs: 1, ..Default::default() },
+                    IR { op: IRType::IMM, lhs: 5, rhs: 1, ..Default::default() },
                     IR { op: IRType::Ope('-'), lhs: 1, rhs: 5, ..Default::default() },
                     IR { op: IRType::KILL, lhs: 5, ..Default::default() },
                     IR { op: IRType::RETURN, lhs: 1, ..Default::default() },
@@ -343,10 +355,10 @@ mod tests {
                 irs: [
                     IR { op: IRType::SAVE_ARGS, lhs: 2, rhs: 0, ..Default::default() },
                     IR { op: IRType::MOV, lhs: 1, rhs: 0, ..Default::default() },
-                    IR { op: IRType::SUB_IMN, lhs: 1, rhs: 8, ..Default::default() },
+                    IR { op: IRType::SUB_IMM, lhs: 1, rhs: 8, ..Default::default() },
                     IR { op: IRType::LOAD, lhs: 1, rhs: 1, ..Default::default() },
                     IR { op: IRType::MOV, lhs: 2, rhs: 0, ..Default::default() },
-                    IR { op: IRType::SUB_IMN, lhs: 2, rhs: 16, ..Default::default() },
+                    IR { op: IRType::SUB_IMM, lhs: 2, rhs: 16, ..Default::default() },
                     IR { op: IRType::LOAD, lhs: 2, rhs: 2, ..Default::default() },
                     IR { op: IRType::Ope('+'), lhs: 1, rhs: 2, ..Default::default() },
                     IR { op: IRType::KILL, lhs: 2, rhs: 0, ..Default::default() },
@@ -356,8 +368,8 @@ mod tests {
             Function {
                 name: "main".to_string(),
                 irs: [
-                    IR { op: IRType::IMN, lhs: 1, rhs: 1, ..Default::default() },
-                    IR { op: IRType::IMN, lhs: 2, rhs: 2, ..Default::default() },
+                    IR { op: IRType::IMM, lhs: 1, rhs: 1, ..Default::default() },
+                    IR { op: IRType::IMM, lhs: 2, rhs: 2, ..Default::default() },
                     IR { op: IRType::CALL, lhs: 3, rhs: 0, name: "add".to_string(), args: [1, 2].to_vec() },
                     IR { op: IRType::KILL, lhs: 1, rhs: 0, ..Default::default() },
                     IR { op: IRType::KILL, lhs: 2, rhs: 0, ..Default::default() },

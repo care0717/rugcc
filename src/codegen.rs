@@ -24,15 +24,15 @@ fn gen(func: Function, label: usize) {
 
     for ir in func.irs {
         match ir.op {
-            IRType::IMN => {
+            IRType::IMM => {
                 print!("\tmov {}, {}\n", REGS[ir.lhs], ir.rhs);
-            },
+            }
             IRType::MOV => {
                 print!("\tmov {}, {}\n", REGS[ir.lhs], REGS[ir.rhs]);
             },
-            IRType::SUB_IMN => {
+            IRType::SUB_IMM => {
                 print!("\tsub {}, {}\n", REGS[ir.lhs], ir.rhs);
-            },
+            }
             IRType::RETURN => {
                 print!("\tmov rax, {}\n", REGS[ir.lhs]);
                 print!("\tjmp {}\n", ret);

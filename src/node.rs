@@ -202,6 +202,9 @@ fn stmt(tokens: &mut Vec<Token>) -> Node {
                 error(format!("variable name expected, but got {}", t.val));
             }
             node.val = t.val;
+            if consume(TK::OPE('='), tokens) {
+                node.init = Some(Box::new(assign(tokens)));
+            }
             expect(TK::END_LINE, tokens);
             return node
         },

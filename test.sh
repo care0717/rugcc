@@ -29,12 +29,12 @@ runtest 'int main() { return 1+2+3+4+5+6+7+8+9+10+11+12+13; }' 91
 runtest 'int main() { return 2*3; }' 6
 runtest 'int main() { return 1+10/3; }' 4
 runtest 'int main() { return (2+3)*(4+5); }' 45
-runtest 'int main() { int a; a=2+6/2; a=a*2; return a; }' 10
+runtest 'int main() { int a=2+6/2; a=a*2; return a; }' 10
 runtest 'int main() { int a; int b; a=2; b=5+1; return a*b; }' 12
 runtest 'int main() { if (1) return 1+2; return 3*(1+3); }' 3
 runtest 'int main() { if (0) return 1+2; return 3*(1+3); }' 12
-runtest 'int main() { int a; a=1; if (a) a=2; else a=3; return a; }' 2
-runtest 'int main() { int a; a=0; if (a) a=2; else a=3; return a; }' 3
+runtest 'int main() { int a=1; if (a) a=2; else a=3; return a; }' 2
+runtest 'int main() { int a=0; if (a) a=2; else a=3; return a; }' 3
 
 runtest 'int main() { return _plus(2, 3); }' 5
 runtest 'int one() { return 1; } int main() { return one(); }' 1
@@ -60,7 +60,7 @@ runtest 'int main() { return 0>0; }' 0
 runtest 'int main() { return 0>1; }' 0
 runtest 'int main() { return 1>0; }' 1
 
-runtest 'int main() { int sum; sum=0; int i; for (i=10; i<15; i=i+1) sum = sum + i; return sum;}' 60
-runtest 'int main() { int i; int j; int k; int m; i=1; j=1; for (k=0; k<10; k=k+1) { m=i+j; i=j; j=m; } return i;}' 89
+runtest 'int main() { int sum=0; int i; for (i=10; i<15; i=i+1) sum = sum + i; return sum;}' 60
+runtest 'int main() { int i=1; int j=1; int k; int m; for (k=0; k<10; k=k+1) { m=i+j; i=j; j=m; } return i;}' 89
 
 echo "OK"

@@ -92,8 +92,8 @@ pub mod common {
 
     #[derive(Clone, Copy, Debug, PartialEq)]
     pub enum IRType {
-        IMN,
-        SUB_IMN,
+        IMM,
+        SUB_IMM,
         MOV,
         LABEL,
         UNLESS,
@@ -177,8 +177,8 @@ pub mod common {
         IRInfo{op: IRType::Ope('-'), name: "SUB", ty: IRInfoType::REG_REG},
         IRInfo{op: IRType::Ope('*'), name: "MUL", ty: IRInfoType::REG_REG},
         IRInfo{op: IRType::Ope('/'), name: "DIV", ty: IRInfoType::REG_REG},
-        IRInfo{op: IRType::IMN, name: "MOV", ty: IRInfoType::REG_IMN},
-        IRInfo{op: IRType::SUB_IMN, name: "SUB", ty: IRInfoType::REG_IMN},
+        IRInfo{op: IRType::IMM, name: "MOV", ty: IRInfoType::REG_IMN},
+        IRInfo{op: IRType::SUB_IMM, name: "SUB", ty: IRInfoType::REG_IMN},
         IRInfo{op: IRType::MOV, name: "MOV", ty: IRInfoType::REG_REG},
         IRInfo{op: IRType::LABEL, name: "", ty: IRInfoType::LABEL},
         IRInfo{op: IRType::UNLESS, name: "UNLESS", ty: IRInfoType::REG_LABEL},
