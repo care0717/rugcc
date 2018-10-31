@@ -266,19 +266,20 @@ pub fn parse(tokens: &mut Vec<Token>) -> Vec<Node> {
 mod tests {
     use super::*;
     # [test]
-    fn can_parse() {
+    fn can_parse_arithmetic_expr() {
         let input = [
-            Token{ty: TK::EOF, val: "EOF".to_string()},
-            Token { ty: TK::OPE('}'), val: "}".to_string() },
-            Token{ty: TK::END_LINE, val: ";".to_string()},
-            Token { ty: TK::NUM, val: "51".to_string() },
-            Token { ty: TK::RETURN, val: "return".to_string() },
-            Token { ty: TK::OPE('{'), val: "{".to_string() },
-            Token { ty: TK::OPE(')'), val: ")".to_string() },
-            Token { ty: TK::OPE('('), val: "(".to_string() },
-            Token { ty: TK::IDENT, val: "main".to_string() }];
-
+            Token { ty: TK::EOF, val: "EOF".to_string() }, Token { ty: TK::OPE('}'), val: "}".to_string() },
+            Token { ty: TK::END_LINE, val: ";".to_string() }, Token { ty: TK::NUM, val: "1".to_string() },
+            Token { ty: TK::OPE('-'), val: "-".to_string() }, Token { ty: TK::NUM, val: "2".to_string() },
+            Token { ty: TK::OPE('/'), val: "/".to_string() }, Token { ty: TK::OPE(')'), val: ")".to_string() },
+            Token { ty: TK::NUM, val: "3".to_string() }, Token { ty: TK::OPE('*'), val: "*".to_string() },
+            Token { ty: TK::NUM, val: "2".to_string() }, Token { ty: TK::OPE('+'), val: "+".to_string() },
+            Token { ty: TK::NUM, val: "2".to_string() }, Token { ty: TK::OPE('('), val: "(".to_string() },
+            Token { ty: TK::RETURN, val: "return".to_string() }, Token { ty: TK::OPE('{'), val: "{".to_string() },
+            Token { ty: TK::OPE(')'), val: ")".to_string() }, Token { ty: TK::OPE('('), val: "(".to_string() }, Token { ty: TK::IDENT, val: "main".to_string() }
+        ];
         let result = parse(&mut input.to_vec());
+
         let expect = [
             Node {
                 ty: ND::FUNC,
@@ -289,18 +290,112 @@ mod tests {
                         Node {
                             ty: ND::RETURN,
                             expr: Some(Box::new(Node {
-                                ty: ND::NUM,
-                                val: "51".to_string(), ..Default::default()})),
+                                ty: ND::OPE('-'),
+                                lhs: Some(Box::new(Node {
+                                    ty: ND::OPE('/'),
+                                    lhs: Some(Box::new(Node {
+                                        ty: ND::OPE('+'),
+                                        lhs: Some(Box::new(Node {
+                                            ty: ND::NUM,
+                                            val: "2".to_string(), ..Default::default() })),
+                                        rhs: Some(Box::new(Node {
+                                            ty: ND::OPE('*'),
+                                            lhs: Some(Box::new(Node {
+                                                ty: ND::NUM,
+                                                val: "2".to_string(), ..Default::default()})),
+                                            rhs: Some(Box::new(Node {
+                                                ty: ND::NUM,
+                                                val: "3".to_string(), ..Default::default()})),
+                                            ..Default::default()})),
+                                        ..Default::default()})),
+                                    rhs: Some(Box::new(Node {
+                                        ty: ND::NUM,
+                                        val: "2".to_string(), ..Default::default()
+                                         })),  ..Default::default()})),
+                                rhs: Some(Box::new(Node {
+                                    ty: ND::NUM,
+                                    val: "1".to_string(), ..Default::default() })),
+                                ..Default::default()
+                                })),
+                            ..Default::default()
+                        }].to_vec(),
+                    ..Default::default() })),
+                ..Default::default()}];
+        assert_eq!(result.len(), expect.len());
+        for i in 0..result.len() {
+            assert_eq!(result[i], expect[i]);
+        }
+    }
+
+    # [test]
+    fn can_parse_function() {
+        let input = [
+            Token { ty: TK::EOF, val: "EOF".to_string() }, Token { ty: TK::OPE('}'), val: "}".to_string() },
+            Token { ty: TK::END_LINE, val: ";".to_string() }, Token { ty: TK::OPE(')'), val: ")".to_string() },
+            Token { ty: TK::NUM, val: "2".to_string() }, Token { ty: TK::OPE(','), val: ",".to_string() },
+            Token { ty: TK::NUM, val: "1".to_string() }, Token { ty: TK::OPE('('), val: "(".to_string() },
+            Token { ty: TK::IDENT, val: "add".to_string() }, Token { ty: TK::RETURN, val: "return".to_string() },
+            Token { ty: TK::OPE('{'), val: "{".to_string() }, Token { ty: TK::OPE(')'), val: ")".to_string() },
+            Token { ty: TK::OPE('('), val: "(".to_string() }, Token { ty: TK::IDENT, val: "main".to_string() },
+            Token { ty: TK::OPE('}'), val: "}".to_string() }, Token { ty: TK::END_LINE, val: ";".to_string() },
+            Token { ty: TK::IDENT, val: "b".to_string() }, Token { ty: TK::OPE('+'), val: "+".to_string() },
+            Token { ty: TK::IDENT, val: "a".to_string() }, Token { ty: TK::RETURN, val: "return".to_string() },
+            Token { ty: TK::OPE('{'), val: "{".to_string() }, Token { ty: TK::OPE(')'), val: ")".to_string() },
+            Token { ty: TK::IDENT, val: "b".to_string() }, Token { ty: TK::OPE(','), val: ",".to_string() },
+            Token { ty: TK::IDENT, val: "a".to_string() }, Token { ty: TK::OPE('('), val: "(".to_string() }, Token { ty: TK::IDENT, val: "add".to_string() }
+        ];
+
+        let result = parse(&mut input.to_vec());
+        println!("{:?}", result);
+
+        let expect = [
+            Node {
+                ty: ND::FUNC,
+                val: "add".to_string(),
+                args: [
+                    Node { ty: ND::IDENT, val: "a".to_string(), ..Default::default() },
+                    Node { ty: ND::IDENT, val: "b".to_string(), ..Default::default() }
+                ].to_vec(),
+                body: Some(Box::new(Node {
+                    ty: ND::COMP_STMT,
+                    stmts: [
+                        Node {
+                            ty: ND::RETURN,
+                            expr: Some(Box::new(Node {
+                                ty: ND::OPE('+'),
+                                lhs: Some(Box::new(Node { ty: ND::IDENT, val: "a".to_string(), ..Default::default() })),
+                                rhs: Some(Box::new(Node { ty: ND::IDENT, val: "b".to_string(), ..Default::default() })),
+                                ..Default::default() })),
                             ..Default::default()
                         }].to_vec(),
                     ..Default::default() })),
                 ..Default::default()
-            }
-        ];
+            },
+            Node {
+                ty: ND::FUNC,
+                val: "main".to_string(),
+                body: Some(Box::new(Node {
+                    ty: ND::COMP_STMT,
+                    stmts: [
+                        Node {
+                            ty: ND::RETURN,
+                            expr: Some(Box::new(Node {
+                                ty: ND::CALL,
+                                val: "add".to_string(),
+                                args: [
+                                    Node { ty: ND::NUM, val: "1".to_string(), ..Default::default()},
+                                    Node { ty: ND::NUM, val: "2".to_string(), ..Default::default() }
+                                ].to_vec(), ..Default::default() })),
+                            ..Default::default() }
+                    ].to_vec(),
+                    ..Default::default()})),
+                ..Default::default()
+            }];
 
         assert_eq!(result.len(), expect.len());
         for i in 0..result.len() {
             assert_eq!(result[i], expect[i]);
         }
     }
+
 }

@@ -83,20 +83,48 @@ pub fn tokenize(s: Vec<char>) -> Vec<Token>{
 mod tests {
     use super::*;
     # [test]
-    fn can_tokenize() {
-        let input = "main() {return 51;}".chars().collect();
+    fn can_tokenize_arithmetic_expr() {
+        let input = "main() { return (2+2*3)/2-1;}".chars().collect();
 
         let result = tokenize(input);
         let expect = [
-            Token{ty: TK::EOF, val: "EOF".to_string()},
-            Token { ty: TK::OPE('}'), val: "}".to_string() },
-            Token{ty: TK::END_LINE, val: ";".to_string()},
-            Token { ty: TK::NUM, val: "51".to_string() },
-            Token { ty: TK::RETURN, val: "return".to_string() },
-            Token { ty: TK::OPE('{'), val: "{".to_string() },
-            Token { ty: TK::OPE(')'), val: ")".to_string() },
-            Token { ty: TK::OPE('('), val: "(".to_string() },
-            Token { ty: TK::IDENT, val: "main".to_string() }];
+            Token { ty: TK::EOF, val: "EOF".to_string().to_string() }, Token { ty: TK::OPE('}'), val: "}".to_string() },
+            Token { ty: TK::END_LINE, val: ";".to_string() }, Token { ty: TK::NUM, val: "1".to_string() },
+            Token { ty: TK::OPE('-'), val: "-".to_string() }, Token { ty: TK::NUM, val: "2".to_string() },
+            Token { ty: TK::OPE('/'), val: "/".to_string() }, Token { ty: TK::OPE(')'), val: ")".to_string() },
+            Token { ty: TK::NUM, val: "3".to_string() }, Token { ty: TK::OPE('*'), val: "*".to_string() },
+            Token { ty: TK::NUM, val: "2".to_string() }, Token { ty: TK::OPE('+'), val: "+".to_string() },
+            Token { ty: TK::NUM, val: "2".to_string() }, Token { ty: TK::OPE('('), val: "(".to_string() },
+            Token { ty: TK::RETURN, val: "return".to_string() }, Token { ty: TK::OPE('{'), val: "{".to_string() },
+            Token { ty: TK::OPE(')'), val: ")".to_string() }, Token { ty: TK::OPE('('), val: "(".to_string() }, Token { ty: TK::IDENT, val: "main".to_string() }
+        ];
+        assert_eq!(result.len(), expect.len());
+        for i in 0..result.len() {
+            assert_eq!(result[i], expect[i]);
+        }
+    }
+
+    # [test]
+    fn can_tokenize_function() {
+        let input = "add(a,b) {return a+b;} main() { return add(1,2); }".chars().collect();
+
+        let result = tokenize(input);
+
+        let expect = [
+            Token { ty: TK::EOF, val: "EOF".to_string() }, Token { ty: TK::OPE('}'), val: "}".to_string() },
+            Token { ty: TK::END_LINE, val: ";".to_string() }, Token { ty: TK::OPE(')'), val: ")".to_string() },
+            Token { ty: TK::NUM, val: "2".to_string() }, Token { ty: TK::OPE(','), val: ",".to_string() },
+            Token { ty: TK::NUM, val: "1".to_string() }, Token { ty: TK::OPE('('), val: "(".to_string() },
+            Token { ty: TK::IDENT, val: "add".to_string() }, Token { ty: TK::RETURN, val: "return".to_string() },
+            Token { ty: TK::OPE('{'), val: "{".to_string() }, Token { ty: TK::OPE(')'), val: ")".to_string() },
+            Token { ty: TK::OPE('('), val: "(".to_string() }, Token { ty: TK::IDENT, val: "main".to_string() },
+            Token { ty: TK::OPE('}'), val: "}".to_string() }, Token { ty: TK::END_LINE, val: ";".to_string() },
+            Token { ty: TK::IDENT, val: "b".to_string() }, Token { ty: TK::OPE('+'), val: "+".to_string() },
+            Token { ty: TK::IDENT, val: "a".to_string() }, Token { ty: TK::RETURN, val: "return".to_string() },
+            Token { ty: TK::OPE('{'), val: "{".to_string() }, Token { ty: TK::OPE(')'), val: ")".to_string() },
+            Token { ty: TK::IDENT, val: "b".to_string() }, Token { ty: TK::OPE(','), val: ",".to_string() },
+            Token { ty: TK::IDENT, val: "a".to_string() }, Token { ty: TK::OPE('('), val: "(".to_string() }, Token { ty: TK::IDENT, val: "add".to_string() }
+        ];
 
         assert_eq!(result.len(), expect.len());
         for i in 0..result.len() {

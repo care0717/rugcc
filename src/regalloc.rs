@@ -81,26 +81,45 @@ mod tests {
             Function {
                 name: "main".to_string(),
                 irs: [
-                    IR { op: IRType::IMN, lhs: 1, rhs: 51, ..Default::default() },
-                    IR { op: IRType::RETURN, lhs: 1, rhs: 0, ..Default::default() },
-                    IR { op: IRType::KILL, lhs: 1, rhs: 0, ..Default::default() }
-                ].to_vec(),
-                stack_size: 0
-            }
-        ].to_vec();
+                    IR { op: IRType::IMN, lhs: 1, rhs: 2, ..Default::default()},
+                    IR { op: IRType::IMN, lhs: 2, rhs: 2, ..Default::default() },
+                    IR { op: IRType::IMN, lhs: 3, rhs: 3, ..Default::default() },
+                    IR { op: IRType::Ope('*'), lhs: 2, rhs: 3, ..Default::default() },
+                    IR { op: IRType::KILL, lhs: 3, ..Default::default() },
+                    IR { op: IRType::Ope('+'), lhs: 1, rhs: 2, ..Default::default() },
+                    IR { op: IRType::KILL, lhs: 2, ..Default::default() },
+                    IR { op: IRType::IMN, lhs: 4, rhs: 2, ..Default::default() },
+                    IR { op: IRType::Ope('/'), lhs: 1, rhs: 4, ..Default::default() },
+                    IR { op: IRType::KILL, lhs: 4, ..Default::default() },
+                    IR { op: IRType::IMN, lhs: 5, rhs: 1, ..Default::default() },
+                    IR { op: IRType::Ope('-'), lhs: 1, rhs: 5, ..Default::default() },
+                    IR { op: IRType::KILL, lhs: 5, ..Default::default() },
+                    IR { op: IRType::RETURN, lhs: 1, ..Default::default() },
+                    IR { op: IRType::KILL, lhs: 1, ..Default::default() }].to_vec(),
+                stack_size: 0 }].to_vec();
 
         alloc_regs(&mut input);
-        let expect = [
+
+        let expect =  [
             Function {
                 name: "main".to_string(),
                 irs: [
-                    IR { op: IRType::IMN, lhs: 1, rhs: 51, ..Default::default() },
-                    IR { op: IRType::RETURN, lhs: 1, rhs: 0, ..Default::default() },
-                    IR { op: IRType::NOP, lhs: 1, rhs: 0, ..Default::default() }
-                ].to_vec(),
-                stack_size: 0
-            }
-        ];
+                    IR { op: IRType::IMN, lhs: 1, rhs: 2, ..Default::default()},
+                    IR { op: IRType::IMN, lhs: 2, rhs: 2, ..Default::default() },
+                    IR { op: IRType::IMN, lhs: 3, rhs: 3, ..Default::default() },
+                    IR { op: IRType::Ope('*'), lhs: 2, rhs: 3, ..Default::default() },
+                    IR { op: IRType::NOP, lhs: 3, ..Default::default() },
+                    IR { op: IRType::Ope('+'), lhs: 1, rhs: 2, ..Default::default() },
+                    IR { op: IRType::NOP, lhs: 2, ..Default::default() },
+                    IR { op: IRType::IMN, lhs: 2, rhs: 2, ..Default::default() },
+                    IR { op: IRType::Ope('/'), lhs: 1, rhs: 2, ..Default::default() },
+                    IR { op: IRType::NOP, lhs: 4, ..Default::default() },
+                    IR { op: IRType::IMN, lhs: 2, rhs: 1, ..Default::default() },
+                    IR { op: IRType::Ope('-'), lhs: 1, rhs: 2, ..Default::default() },
+                    IR { op: IRType::NOP, lhs: 5, ..Default::default() },
+                    IR { op: IRType::RETURN, lhs: 1, ..Default::default() },
+                    IR { op: IRType::NOP, lhs: 1, ..Default::default() }].to_vec(),
+                stack_size: 0 }];
 
         assert_eq!(input.len(), expect.len());
         for i in 0..input.len() {

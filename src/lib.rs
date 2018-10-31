@@ -183,8 +183,6 @@ pub mod common {
         IRInfo{op: IRType::SAVE_ARGS, name: "SAVE_ARGS", ty: IRInfoType::IMN},
     ];
 
-
-
     pub fn dump_ir(fns: &Vec<Function>) {
         for f in fns {
             eprintln!("{}():", f.clone().name);
@@ -193,7 +191,6 @@ pub mod common {
             }
         }
     }
-
 
     pub fn error(mes: &str, val: Option<&String>) {
         match val {

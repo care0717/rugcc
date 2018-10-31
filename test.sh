@@ -27,10 +27,10 @@ runtest 'main() { return 5+20-4-2; }' 19
 runtest 'main() { return 12 +  34 - 5; }' 41
 runtest 'main() { return 1+2+3+4+5+6+7+8+9+10+11+12+13; }' 91
 runtest 'main() { return 2*3; }' 6
-runtest 'main() { return 10/3+1; }' 4
+runtest 'main() { return 1+10/3; }' 4
 runtest 'main() { return (2+3)*(4+5); }' 45
 runtest 'main() { a=2; return a; }' 2
-runtest 'main() { a=2+6/2; a=a*2; return a; }' 8
+runtest 'main() { a=2+6/2; a=a*2; return a; }' 10
 runtest 'main() { a=2; b=5+1; return a*b; }' 12
 runtest 'main() { if (1) return 1+2; return 3*(1+3); }' 3
 runtest 'main() { if (0) return 1+2; return 3*(1+3); }' 12

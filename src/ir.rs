@@ -198,7 +198,7 @@ impl IrGenerator {
 mod tests {
     use super::*;
     # [test]
-    fn can_gen_ir() {
+    fn can_gen_ir_arithmetic_expr() {
         let input = [
             Node {
                 ty: ND::FUNC,
@@ -209,27 +209,142 @@ mod tests {
                         Node {
                             ty: ND::RETURN,
                             expr: Some(Box::new(Node {
-                                ty: ND::NUM,
-                                val: "51".to_string(), ..Default::default()})),
+                                ty: ND::OPE('-'),
+                                lhs: Some(Box::new(Node {
+                                    ty: ND::OPE('/'),
+                                    lhs: Some(Box::new(Node {
+                                        ty: ND::OPE('+'),
+                                        lhs: Some(Box::new(Node {
+                                            ty: ND::NUM,
+                                            val: "2".to_string(), ..Default::default() })),
+                                        rhs: Some(Box::new(Node {
+                                            ty: ND::OPE('*'),
+                                            lhs: Some(Box::new(Node {
+                                                ty: ND::NUM,
+                                                val: "2".to_string(), ..Default::default()})),
+                                            rhs: Some(Box::new(Node {
+                                                ty: ND::NUM,
+                                                val: "3".to_string(), ..Default::default()})),
+                                            ..Default::default()})),
+                                        ..Default::default()})),
+                                    rhs: Some(Box::new(Node {
+                                        ty: ND::NUM,
+                                        val: "2".to_string(), ..Default::default()
+                                    })),  ..Default::default()})),
+                                rhs: Some(Box::new(Node {
+                                    ty: ND::NUM,
+                                    val: "1".to_string(), ..Default::default() })),
+                                ..Default::default()
+                            })),
                             ..Default::default()
                         }].to_vec(),
                     ..Default::default() })),
-                ..Default::default()
-            }
-        ];
+                ..Default::default()}];
 
         let result = IrGenerator::new().gen_ir(input.to_vec());
+
         let expect = [
             Function {
                 name: "main".to_string(),
                 irs: [
-                    IR { op: IRType::IMN, lhs: 1, rhs: 51, ..Default::default() },
-                    IR { op: IRType::RETURN, lhs: 1, rhs: 0, ..Default::default() },
-                    IR { op: IRType::KILL, lhs: 1, rhs: 0, ..Default::default() }
+                    IR { op: IRType::IMN, lhs: 1, rhs: 2, ..Default::default()},
+                    IR { op: IRType::IMN, lhs: 2, rhs: 2, ..Default::default() },
+                    IR { op: IRType::IMN, lhs: 3, rhs: 3, ..Default::default() },
+                    IR { op: IRType::Ope('*'), lhs: 2, rhs: 3, ..Default::default() },
+                    IR { op: IRType::KILL, lhs: 3, ..Default::default() },
+                    IR { op: IRType::Ope('+'), lhs: 1, rhs: 2, ..Default::default() },
+                    IR { op: IRType::KILL, lhs: 2, ..Default::default() },
+                    IR { op: IRType::IMN, lhs: 4, rhs: 2, ..Default::default() },
+                    IR { op: IRType::Ope('/'), lhs: 1, rhs: 4, ..Default::default() },
+                    IR { op: IRType::KILL, lhs: 4, ..Default::default() },
+                    IR { op: IRType::IMN, lhs: 5, rhs: 1, ..Default::default() },
+                    IR { op: IRType::Ope('-'), lhs: 1, rhs: 5, ..Default::default() },
+                    IR { op: IRType::KILL, lhs: 5, ..Default::default() },
+                    IR { op: IRType::RETURN, lhs: 1, ..Default::default() },
+                    IR { op: IRType::KILL, lhs: 1, ..Default::default() }].to_vec(),
+                stack_size: 0 }];
+
+        assert_eq!(result.len(), expect.len());
+        for i in 0..result.len() {
+            assert_eq!(result[i], expect[i]);
+        }
+    }
+
+    # [test]
+    fn can_gen_ir_function() {
+        let input = [
+            Node {
+                ty: ND::FUNC,
+                val: "add".to_string(),
+                args: [
+                    Node { ty: ND::IDENT, val: "a".to_string(), ..Default::default() },
+                    Node { ty: ND::IDENT, val: "b".to_string(), ..Default::default() }
                 ].to_vec(),
-                stack_size: 0
-            }
-        ];
+                body: Some(Box::new(Node {
+                    ty: ND::COMP_STMT,
+                    stmts: [
+                        Node {
+                            ty: ND::RETURN,
+                            expr: Some(Box::new(Node {
+                                ty: ND::OPE('+'),
+                                lhs: Some(Box::new(Node { ty: ND::IDENT, val: "a".to_string(), ..Default::default() })),
+                                rhs: Some(Box::new(Node { ty: ND::IDENT, val: "b".to_string(), ..Default::default() })),
+                                ..Default::default() })),
+                            ..Default::default()
+                        }].to_vec(),
+                    ..Default::default() })),
+                ..Default::default()
+            },
+            Node {
+                ty: ND::FUNC,
+                val: "main".to_string(),
+                body: Some(Box::new(Node {
+                    ty: ND::COMP_STMT,
+                    stmts: [
+                        Node {
+                            ty: ND::RETURN,
+                            expr: Some(Box::new(Node {
+                                ty: ND::CALL,
+                                val: "add".to_string(),
+                                args: [
+                                    Node { ty: ND::NUM, val: "1".to_string(), ..Default::default()},
+                                    Node { ty: ND::NUM, val: "2".to_string(), ..Default::default() }
+                                ].to_vec(), ..Default::default() })),
+                            ..Default::default() }
+                    ].to_vec(),
+                    ..Default::default()})),
+                ..Default::default()
+            }];
+
+        let result = IrGenerator::new().gen_ir(input.to_vec());
+
+        let expect = [
+            Function {
+                name: "add".to_string(),
+                irs: [
+                    IR { op: IRType::SAVE_ARGS, lhs: 2, rhs: 0, ..Default::default() },
+                    IR { op: IRType::MOV, lhs: 1, rhs: 0, ..Default::default() },
+                    IR { op: IRType::SUB_IMN, lhs: 1, rhs: 8, ..Default::default() },
+                    IR { op: IRType::LOAD, lhs: 1, rhs: 1, ..Default::default() },
+                    IR { op: IRType::MOV, lhs: 2, rhs: 0, ..Default::default() },
+                    IR { op: IRType::SUB_IMN, lhs: 2, rhs: 16, ..Default::default() },
+                    IR { op: IRType::LOAD, lhs: 2, rhs: 2, ..Default::default() },
+                    IR { op: IRType::Ope('+'), lhs: 1, rhs: 2, ..Default::default() },
+                    IR { op: IRType::KILL, lhs: 2, rhs: 0, ..Default::default() },
+                    IR { op: IRType::RETURN, lhs: 1, rhs: 0, ..Default::default() },
+                    IR { op: IRType::KILL, lhs: 1, rhs: 0, ..Default::default() }].to_vec(),
+                stack_size: 16 },
+            Function {
+                name: "main".to_string(),
+                irs: [
+                    IR { op: IRType::IMN, lhs: 1, rhs: 1, ..Default::default() },
+                    IR { op: IRType::IMN, lhs: 2, rhs: 2, ..Default::default() },
+                    IR { op: IRType::CALL, lhs: 3, rhs: 0, name: "add".to_string(), args: [1, 2].to_vec() },
+                    IR { op: IRType::KILL, lhs: 1, rhs: 0, ..Default::default() },
+                    IR { op: IRType::KILL, lhs: 2, rhs: 0, ..Default::default() },
+                    IR { op: IRType::RETURN, lhs: 3, rhs: 0, ..Default::default() },
+                    IR { op: IRType::KILL, lhs: 3, rhs: 0, ..Default::default() }].to_vec(),
+                stack_size: 0 }];
 
         assert_eq!(result.len(), expect.len());
         for i in 0..result.len() {
