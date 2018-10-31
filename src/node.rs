@@ -203,13 +203,25 @@ fn stmt(tokens: &mut Vec<Token>) -> Node {
             node.then = Some(Box::new(stmt(tokens)));
             if consume(TK::ELSE, tokens) {node.els = Some(Box::new(stmt(tokens)));}
             return node
-        }
+        },
+        TK::FOR => {
+            node.ty = ND::FOR;
+            expect(TK::OPE('('), tokens);
+            node.init = Some(Box::new(assign(tokens)));
+            expect(TK::END_LINE, tokens);
+            node.cond = Some(Box::new(assign(tokens)));
+            expect(TK::END_LINE, tokens);
+            node.inc = Some(Box::new(assign(tokens)));
+            expect(TK::OPE(')'), tokens);
+            node.body = Some(Box::new(stmt(tokens)));
+            return node;
+        },
         TK::RETURN => {
             node.ty = ND::RETURN;
             node.expr = Some(Box::new(assign(tokens)));
             expect(TK::END_LINE, tokens);
             return node
-        }
+        },
         _ => {
             tokens.push(token);
             node.expr = Some(Box::new(assign(tokens)));
@@ -346,7 +358,6 @@ mod tests {
         ];
 
         let result = parse(&mut input.to_vec());
-        println!("{:?}", result);
 
         let expect = [
             Node {

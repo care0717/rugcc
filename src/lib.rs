@@ -13,6 +13,7 @@ pub mod common {
         ELSE,
         LOGOR,
         LOGAND,
+        FOR,
         END_LINE,
     }
 
@@ -27,6 +28,7 @@ pub mod common {
         NUM,
         CALL,
         FUNC,
+        FOR,
         OPE(char),
         IDENT,
         IF,
@@ -45,15 +47,21 @@ pub mod common {
         pub val: String,
         pub expr: Option<Box<Node>>,
         pub stmts: Vec<Node>,
+        // "if" ( cond ) then "else" els
         pub cond: Option<Box<Node>>,
         pub then: Option<Box<Node>>,
         pub els: Option<Box<Node>>,
+        // "for" ( init; cond; inc ) body
+        pub init: Option<Box<Node>>,
+        pub inc: Option<Box<Node>>,
         pub args: Vec<Node>,
         pub body: Option<Box<Node>>,
     }
     impl Default for Node {
         fn default() -> Self {
-            Self { ty: ND::NUM, lhs: None, rhs: None, val: String::new(), expr: None, cond: None, then: None, els: None, stmts: Vec::new(), args: Vec::new(), body: None}
+            Self { ty: ND::NUM, lhs: None, rhs: None, val: String::new(), expr: None,
+                cond: None, then: None, els: None, init: None, inc: None, stmts: Vec::new(),
+                args: Vec::new(), body: None}
         }
     }
     impl Node {

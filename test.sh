@@ -61,4 +61,6 @@ runtest 'main() { return 0>0; }' 0
 runtest 'main() { return 0>1; }' 0
 runtest 'main() { return 1>0; }' 1
 
+runtest 'main() { sum=0; for (i=10; i<15; i=i+1) sum = sum + i; return sum;}' 60
+
 echo "OK"

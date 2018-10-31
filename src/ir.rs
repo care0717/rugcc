@@ -147,6 +147,23 @@ impl IrGenerator {
                 self.gen_stmt(*node.els.unwrap());
                 self.add(IRType::LABEL, y, 0);
             },
+            ND::FOR => {
+                let x = self.label;
+                self.label += 1;
+                let y = self.label;
+                self.label += 1;
+                let r1 = self.gen_expr(*node.init.unwrap());
+                self.add(IRType::KILL, r1, 0);
+                self.add(IRType::LABEL, x, 0);
+                let r2 = self.gen_expr(*node.cond.unwrap());
+                self.add(IRType::UNLESS, r2, y);
+                self.add(IRType::KILL, r2, 0);
+                self.gen_stmt(*node.body.unwrap());
+                let r3 = self.gen_expr(*node.inc.unwrap());
+                self.add(IRType::KILL, r3, 0);
+                self.add(IRType::JMP, x, 0);
+                self.add(IRType::LABEL, y, 0);
+            },
             ND::RETURN => {
                 let r = self.gen_expr(*node.expr.unwrap());
                 self.add(IRType::RETURN, r, 0);
