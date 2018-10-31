@@ -9,6 +9,7 @@ pub mod common {
         EOF,
         RETURN,
         IDENT,
+        INT,
         IF,
         ELSE,
         LOGOR,
@@ -26,11 +27,12 @@ pub mod common {
     #[derive(PartialEq, Debug, Clone)]
     pub enum ND {
         NUM,
+        IDENT,
+        VARDEF,
         CALL,
         FUNC,
         FOR,
         OPE(char),
-        IDENT,
         IF,
         LOGOR,
         LOGAND,
@@ -200,11 +202,8 @@ pub mod common {
         }
     }
 
-    pub fn error(mes: &str, val: Option<&String>) {
-        match val {
-            Some(v) => println!("{} {}",mes, v),
-            None => println!("{}", mes),
-        }
+    pub fn error(mes: String) {
+        eprintln!("{:?}", mes);
         std::process::exit(1);
     }
 }

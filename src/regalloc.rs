@@ -17,7 +17,7 @@ fn alloc(ir_reg: usize, reg_map: &mut Vec<i32>, used: &mut Vec<bool>) -> usize{
         reg_map[ir_reg] = i as i32;
         return i;
     }
-    error("register exhausted", None);
+    error("register exhausted".to_string());
     return 0
 }
 fn kill(r: usize, used: &mut Vec<bool>)  {

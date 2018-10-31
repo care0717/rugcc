@@ -59,6 +59,7 @@ pub fn tokenize(s: Vec<char>) -> Vec<Token>{
                 "if" => tokens.push(Token{ty: TK::IF, val: name.iter().collect()}),
                 "else" => tokens.push(Token{ty: TK::ELSE, val: name.iter().collect()}),
                 "for" => tokens.push(Token{ty: TK::FOR, val: name.iter().collect()}),
+                "int" => tokens.push(Token{ty: TK::INT, val: name.iter().collect()}),
                 _ => tokens.push(Token{ty: TK::IDENT, val: name.iter().collect()}),
             }
             continue;
@@ -85,7 +86,7 @@ mod tests {
     use super::*;
     # [test]
     fn can_tokenize_arithmetic_expr() {
-        let input = "main() { return (2+2*3)/2-1;}".chars().collect();
+        let input = "int main() { return (2+2*3)/2-1;}".chars().collect();
 
         let result = tokenize(input);
         let expect = [
@@ -97,7 +98,8 @@ mod tests {
             Token { ty: TK::NUM, val: "2".to_string() }, Token { ty: TK::OPE('+'), val: "+".to_string() },
             Token { ty: TK::NUM, val: "2".to_string() }, Token { ty: TK::OPE('('), val: "(".to_string() },
             Token { ty: TK::RETURN, val: "return".to_string() }, Token { ty: TK::OPE('{'), val: "{".to_string() },
-            Token { ty: TK::OPE(')'), val: ")".to_string() }, Token { ty: TK::OPE('('), val: "(".to_string() }, Token { ty: TK::IDENT, val: "main".to_string() }
+            Token { ty: TK::OPE(')'), val: ")".to_string() }, Token { ty: TK::OPE('('), val: "(".to_string() },
+            Token { ty: TK::IDENT, val: "main".to_string() }, Token { ty: TK::INT, val: "int".to_string() }
         ];
         assert_eq!(result.len(), expect.len());
         for i in 0..result.len() {
@@ -107,7 +109,7 @@ mod tests {
 
     # [test]
     fn can_tokenize_function() {
-        let input = "add(a,b) {return a+b;} main() { return add(1,2); }".chars().collect();
+        let input = "int add(a,b) {return a+b;} int main() { return add(1,2); }".chars().collect();
 
         let result = tokenize(input);
 
@@ -119,12 +121,14 @@ mod tests {
             Token { ty: TK::IDENT, val: "add".to_string() }, Token { ty: TK::RETURN, val: "return".to_string() },
             Token { ty: TK::OPE('{'), val: "{".to_string() }, Token { ty: TK::OPE(')'), val: ")".to_string() },
             Token { ty: TK::OPE('('), val: "(".to_string() }, Token { ty: TK::IDENT, val: "main".to_string() },
+            Token { ty: TK::INT, val: "int".to_string() },
             Token { ty: TK::OPE('}'), val: "}".to_string() }, Token { ty: TK::END_LINE, val: ";".to_string() },
             Token { ty: TK::IDENT, val: "b".to_string() }, Token { ty: TK::OPE('+'), val: "+".to_string() },
             Token { ty: TK::IDENT, val: "a".to_string() }, Token { ty: TK::RETURN, val: "return".to_string() },
             Token { ty: TK::OPE('{'), val: "{".to_string() }, Token { ty: TK::OPE(')'), val: ")".to_string() },
             Token { ty: TK::IDENT, val: "b".to_string() }, Token { ty: TK::OPE(','), val: ",".to_string() },
-            Token { ty: TK::IDENT, val: "a".to_string() }, Token { ty: TK::OPE('('), val: "(".to_string() }, Token { ty: TK::IDENT, val: "add".to_string() }
+            Token { ty: TK::IDENT, val: "a".to_string() }, Token { ty: TK::OPE('('), val: "(".to_string() },
+            Token { ty: TK::IDENT, val: "add".to_string() }, Token { ty: TK::INT, val: "int".to_string() }
         ];
 
         assert_eq!(result.len(), expect.len());

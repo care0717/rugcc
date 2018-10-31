@@ -21,15 +21,13 @@ impl IrGenerator {
 
     fn gen_lval(&mut self, node: Node) -> usize {
         if node.ty != ND::IDENT {
-            error("not an lvalue", None);
+            error("not an lvalue".to_string());
         }
-        let off = if self.vars.get(&node.val.to_string()).is_none() {
-            self.stack_size += 8;
-            self.vars.insert(node.val, self.stack_size);
-            self.stack_size
-        } else {
-            *self.vars.get(&node.val.to_string()).unwrap()
-        };
+        if self.vars.get(&node.val.to_string()).is_none() {
+            error(format!("undefined variable: {:?}", node.val));
+        }
+        let off = *self.vars.get(&node.val.to_string()).unwrap();
+
         let r = self.regno;
         self.regno += 1;
         self.add(IRType::MOV, r, 0);
@@ -129,6 +127,10 @@ impl IrGenerator {
 
     fn gen_stmt(&mut self, node: Node) {
         match node.ty {
+            ND::VARDEF => {
+                self.stack_size += 8;
+                self.vars.insert(node.val, self.stack_size);
+            },
             ND::IF => {
                 let r = self.gen_expr(*node.cond.unwrap());
                 let x = self.label;
@@ -178,7 +180,7 @@ impl IrGenerator {
                     self.gen_stmt(n);
                 }
             },
-            _ => error("unknown node: ", Some(&"aa".to_string())),
+            _ => error(format!("unknown node: {:?}", node.ty))
         }
     }
     fn gen_args(&mut self, nodes: Vec<Node>) {
@@ -187,7 +189,7 @@ impl IrGenerator {
         }
         self.add(IRType::SAVE_ARGS, nodes.len(), 0);
         for node in nodes {
-            if node.ty != ND::IDENT {  error("bad parameter", None); }
+            if node.ty != ND::IDENT {  error(format!("bad parameter: {:?}", node.ty)); }
             self.stack_size += 8;
             self.vars.insert(node.val, self.stack_size);
         }

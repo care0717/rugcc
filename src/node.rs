@@ -34,7 +34,7 @@ fn term(tokens: &mut Vec<Token>) -> Node {
             return node
         },
         _ => {
-            error("number expected, but got ", Some(&token.val));
+            error(format!("number expected, but got {}", token.val));
             // イケてない　通るはずのないreturn
             return Node{ty: ND::NUM, val: token.val, ..Default::default()}
         },
@@ -195,6 +195,16 @@ fn stmt(tokens: &mut Vec<Token>) -> Node {
     let mut node = Node {ty: ND::EXPR_STMT, ..Default::default()};
 
     match token.ty {
+        TK::INT => {
+            node.ty = ND::VARDEF;
+            let t = tokens.pop().unwrap();
+            if t.ty != TK::IDENT {
+                error(format!("variable name expected, but got {}", t.val));
+            }
+            node.val = t.val;
+            expect(TK::END_LINE, tokens);
+            return node
+        },
         TK::IF => {
             node.ty = ND::IF;
             expect(TK::OPE('('), tokens);
@@ -252,8 +262,14 @@ fn compound_stmt(tokens: &mut Vec<Token>) -> Node{
 }
 
 fn function(tokens: &mut Vec<Token>) -> Node{
+    // 関数宣言の最初のintは読み飛ばす
+    let t = tokens.pop().unwrap();
+    if t.ty != TK::INT {
+        error(format!("function return type expected, but got {}", t.val));
+    }
+
     let token = tokens.pop().unwrap();
-    if token.ty != TK::IDENT {error("function name expected, but got {}", Some(&token.val))}
+    if token.ty != TK::IDENT {error(format!("function name expected, but got {}", token.val))}
     expect(TK::OPE('('), tokens);
     let mut node = Node{ty: ND::FUNC, val: token.val, ..Default::default()};
     if !consume(TK::OPE(')'), tokens) {
@@ -295,7 +311,8 @@ mod tests {
             Token { ty: TK::NUM, val: "2".to_string() }, Token { ty: TK::OPE('+'), val: "+".to_string() },
             Token { ty: TK::NUM, val: "2".to_string() }, Token { ty: TK::OPE('('), val: "(".to_string() },
             Token { ty: TK::RETURN, val: "return".to_string() }, Token { ty: TK::OPE('{'), val: "{".to_string() },
-            Token { ty: TK::OPE(')'), val: ")".to_string() }, Token { ty: TK::OPE('('), val: "(".to_string() }, Token { ty: TK::IDENT, val: "main".to_string() }
+            Token { ty: TK::OPE(')'), val: ")".to_string() }, Token { ty: TK::OPE('('), val: "(".to_string() },
+            Token { ty: TK::IDENT, val: "main".to_string() }, Token { ty: TK::INT, val: "int".to_string() }
         ];
         let result = parse(&mut input.to_vec());
 
@@ -356,12 +373,14 @@ mod tests {
             Token { ty: TK::IDENT, val: "add".to_string() }, Token { ty: TK::RETURN, val: "return".to_string() },
             Token { ty: TK::OPE('{'), val: "{".to_string() }, Token { ty: TK::OPE(')'), val: ")".to_string() },
             Token { ty: TK::OPE('('), val: "(".to_string() }, Token { ty: TK::IDENT, val: "main".to_string() },
+            Token { ty: TK::INT, val: "int".to_string() },
             Token { ty: TK::OPE('}'), val: "}".to_string() }, Token { ty: TK::END_LINE, val: ";".to_string() },
             Token { ty: TK::IDENT, val: "b".to_string() }, Token { ty: TK::OPE('+'), val: "+".to_string() },
             Token { ty: TK::IDENT, val: "a".to_string() }, Token { ty: TK::RETURN, val: "return".to_string() },
             Token { ty: TK::OPE('{'), val: "{".to_string() }, Token { ty: TK::OPE(')'), val: ")".to_string() },
             Token { ty: TK::IDENT, val: "b".to_string() }, Token { ty: TK::OPE(','), val: ",".to_string() },
-            Token { ty: TK::IDENT, val: "a".to_string() }, Token { ty: TK::OPE('('), val: "(".to_string() }, Token { ty: TK::IDENT, val: "add".to_string() }
+            Token { ty: TK::IDENT, val: "a".to_string() }, Token { ty: TK::OPE('('), val: "(".to_string() },
+            Token { ty: TK::IDENT, val: "add".to_string() }, Token { ty: TK::INT, val: "int".to_string() }
         ];
 
         let result = parse(&mut input.to_vec());
