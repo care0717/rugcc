@@ -20,10 +20,6 @@ fn alloc(ir_reg: usize, reg_map: &mut Vec<i32>, used: &mut Vec<bool>) -> usize{
     error("register exhausted".to_string());
     return 0
 }
-fn kill(r: usize, used: &mut Vec<bool>)  {
-    assert!(used[r]);
-    used[r] = false;
-}
 
 fn visit(irs: &mut Vec<IR>, reg_map: &mut Vec<i32>, used: &mut Vec<bool>) {
     for i in 0..irs.len() {
@@ -47,7 +43,9 @@ fn visit(irs: &mut Vec<IR>, reg_map: &mut Vec<i32>, used: &mut Vec<bool>) {
             _ => {}
         }
         if ir.op == IRType::KILL {
-            kill(reg_map[ir.lhs] as usize,  used);
+            let r = reg_map[ir.lhs] as usize;
+            assert!(used[r]);
+            used[r] = false;
             irs[i].op = IRType::NOP;
         }
 
