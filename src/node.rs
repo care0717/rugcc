@@ -50,6 +50,25 @@ fn expect(ty: TK, tokens: &mut Vec<Token>) {
     return
 }
 
+fn consume(ope: TK, tokens: &mut Vec<Token>) -> bool {
+    let token = tokens.pop();
+    match token {
+        Some(t) => {
+            if t.ty == ope {
+                return true
+            } else {
+                tokens.push(t);
+                return false
+            }
+        },
+        None => return false,
+    }
+}
+
+fn is_typename(tokens: &Vec<Token>) -> bool {
+    return tokens[tokens.len()-1].ty==TK::INT
+}
+
 fn mul(tokens: &mut Vec<Token>) -> Node {
     let mut lhs = term(tokens);
     loop {
@@ -166,21 +185,6 @@ fn logor(tokens: &mut Vec<Token>) -> Node {
     return lhs;
 }
 
-fn consume(ope: TK, tokens: &mut Vec<Token>) -> bool {
-    let token = tokens.pop();
-    match token {
-        Some(t) => {
-            if t.ty == ope {
-                return true
-            } else {
-                tokens.push(t);
-                return false
-            }
-        },
-        None => return false,
-    }
-}
-
 fn assign(tokens: &mut Vec<Token>) -> Node {
     let lhs = logor(tokens);
     if consume(TK::OPE('='), tokens) {
@@ -190,24 +194,29 @@ fn assign(tokens: &mut Vec<Token>) -> Node {
     }
 }
 
+fn decl(tokens: &mut Vec<Token>) -> Node {
+    let mut node = Node {ty: ND::VARDEF, ..Default::default()};
+    let token = tokens.pop().unwrap();
+    if token.ty != TK::IDENT { error(format!("variable name expected, but got {}", token.val));}
+    node.val = token.val;
+
+    if consume(TK::OPE('='), tokens) {node.init = Some(Box::new(assign(tokens)));}
+    expect(TK::END_LINE, tokens);
+
+    return node
+}
+fn expr_stmt(tokens: &mut Vec<Token>) -> Node {
+    let node = Node {ty: ND::EXPR_STMT, expr: Some(Box::new(assign(tokens))), ..Default::default()};
+    expect(TK::END_LINE, tokens);
+    return node;
+}
+
 fn stmt(tokens: &mut Vec<Token>) -> Node {
     let token = tokens.pop().unwrap();
     let mut node = Node {ty: ND::EXPR_STMT, ..Default::default()};
 
     match token.ty {
-        TK::INT => {
-            node.ty = ND::VARDEF;
-            let t = tokens.pop().unwrap();
-            if t.ty != TK::IDENT {
-                error(format!("variable name expected, but got {}", t.val));
-            }
-            node.val = t.val;
-            if consume(TK::OPE('='), tokens) {
-                node.init = Some(Box::new(assign(tokens)));
-            }
-            expect(TK::END_LINE, tokens);
-            return node
-        },
+        TK::INT => { decl(tokens) },
         TK::IF => {
             node.ty = ND::IF;
             expect(TK::OPE('('), tokens);
@@ -227,8 +236,12 @@ fn stmt(tokens: &mut Vec<Token>) -> Node {
         TK::FOR => {
             node.ty = ND::FOR;
             expect(TK::OPE('('), tokens);
-            node.init = Some(Box::new(assign(tokens)));
-            expect(TK::END_LINE, tokens);
+            if is_typename(tokens) {
+                tokens.pop();
+                node.init = Some(Box::new(decl(tokens)));
+            } else {
+                node.init = Some(Box::new(expr_stmt(tokens)));
+            }
             node.cond = Some(Box::new(assign(tokens)));
             expect(TK::END_LINE, tokens);
             node.inc = Some(Box::new(assign(tokens)));
@@ -244,9 +257,7 @@ fn stmt(tokens: &mut Vec<Token>) -> Node {
         },
         _ => {
             tokens.push(token);
-            node.expr = Some(Box::new(assign(tokens)));
-            expect(TK::END_LINE, tokens);
-            return node
+            return expr_stmt(tokens)
         }
     }
 }

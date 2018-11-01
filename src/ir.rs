@@ -166,8 +166,7 @@ impl IrGenerator {
                 self.label += 1;
                 let y = self.label;
                 self.label += 1;
-                let r1 = self.gen_expr(*node.init.unwrap());
-                self.add(IRType::KILL, r1, 0);
+                self.gen_stmt(*node.init.unwrap());
                 self.add(IRType::LABEL, x, 0);
                 let r2 = self.gen_expr(*node.cond.unwrap());
                 self.add(IRType::UNLESS, r2, y);
