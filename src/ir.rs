@@ -1,5 +1,5 @@
 extern crate rugcc;
-use self::rugcc::common::{IR, ND, Node, IRType, error, Function};
+use self::rugcc::common::{IR, ND, Node, IRType, Function};
 use std::collections::HashMap;
 
 pub struct IrGenerator {
@@ -21,10 +21,10 @@ impl IrGenerator {
 
     fn gen_lval(&mut self, node: Node) -> usize {
         if node.ty != ND::IDENT {
-            error("not an lvalue".to_string());
+            unreachable!("not an lvalue");
         }
         if self.vars.get(&node.val.to_string()).is_none() {
-            error(format!("undefined variable: {:?}", node.val));
+            unreachable!("undefined variable: {:?}", node.val);
         }
         let off = *self.vars.get(&node.val.to_string()).unwrap();
 
@@ -118,10 +118,7 @@ impl IrGenerator {
             ND::OPE(o) =>{
                 return self.gen_binop(IRType::Ope(o), *node.lhs.unwrap(), *node.rhs.unwrap())
             },
-            _ => {
-                assert!(false);
-                return 0
-            }
+            _ => { unreachable!() }
         }
     }
 
@@ -191,7 +188,7 @@ impl IrGenerator {
                     self.gen_stmt(n);
                 }
             },
-            _ => error(format!("unknown node: {:?}", node.ty))
+            _ => unreachable!("unknown node: {:?}", node.ty)
         }
     }
     fn gen_args(&mut self, nodes: Vec<Node>) {
@@ -200,7 +197,7 @@ impl IrGenerator {
         }
         self.add(IRType::SAVE_ARGS, nodes.len(), 0);
         for node in nodes {
-            if node.ty != ND::IDENT {  error(format!("bad parameter: {:?}", node.ty)); }
+            if node.ty != ND::IDENT {  unreachable!("bad parameter: {:?}", node.ty); }
             self.stack_size += 8;
             self.vars.insert(node.val, self.stack_size);
         }

@@ -1,5 +1,5 @@
 extern crate rugcc;
-use self::rugcc::common::{TK, Token, error, ND,  Node};
+use self::rugcc::common::{TK, Token, ND,  Node};
 
 use std;
 
@@ -34,9 +34,7 @@ fn term(tokens: &mut Vec<Token>) -> Node {
             return node
         },
         _ => {
-            error(format!("number expected, but got {}", token.val));
-            // イケてない　通るはずのないreturn
-            return Node{ty: ND::NUM, val: token.val, ..Default::default()}
+            unreachable!("number expected, but got {}", token.val);
         },
     }
 }
@@ -197,7 +195,7 @@ fn assign(tokens: &mut Vec<Token>) -> Node {
 fn decl(tokens: &mut Vec<Token>) -> Node {
     let mut node = Node {ty: ND::VARDEF, ..Default::default()};
     let token = tokens.pop().unwrap();
-    if token.ty != TK::IDENT { error(format!("variable name expected, but got {}", token.val));}
+    if token.ty != TK::IDENT { unreachable!("variable name expected, but got {}", token.val);}
     node.val = token.val;
 
     if consume(TK::OPE('='), tokens) {node.init = Some(Box::new(assign(tokens)));}
@@ -279,11 +277,11 @@ fn function(tokens: &mut Vec<Token>) -> Node{
     // 関数宣言の最初のintは読み飛ばす
     let t = tokens.pop().unwrap();
     if t.ty != TK::INT {
-        error(format!("function return type expected, but got {}", t.val));
+        unreachable!("function return type expected, but got {}", t.val);
     }
 
     let token = tokens.pop().unwrap();
-    if token.ty != TK::IDENT {error(format!("function name expected, but got {}", token.val))}
+    if token.ty != TK::IDENT {unreachable!("function name expected, but got {}", token.val)}
     expect(TK::OPE('('), tokens);
     let mut node = Node{ty: ND::FUNC, val: token.val, ..Default::default()};
     if !consume(TK::OPE(')'), tokens) {

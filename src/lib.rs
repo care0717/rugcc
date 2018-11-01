@@ -1,7 +1,4 @@
-
 pub mod common {
-    use std;
-
     #[derive(PartialEq, Debug, Clone)]
     pub enum TK {
         NUM,
@@ -124,16 +121,12 @@ pub mod common {
     }
     impl IR {
         pub fn get_irinfo(&self) -> IRInfo {
-            // イケてない for info in irinfo と書きたい
             for i in 0..IRINFO.len() {
                 if IRINFO[i].op == self.op {
                     return IRINFO[i];
                 }
             }
-            // イケてない 通るはずのない無駄なreturnを書いている
-            assert!(false);
-            return IRInfo{op: IRType::NOP, name: "NOP", ty: IRInfoType::NOARG}
-
+            unreachable!()
         }
 
         fn tostr(&self) -> String {
@@ -201,9 +194,14 @@ pub mod common {
             }
         }
     }
-
-    pub fn error(mes: String) {
-        eprintln!("{:?}", mes);
-        std::process::exit(1);
-    }
 }
+
+#[macro_export]
+#[allow(unused)]
+macro_rules! error {
+        ( $m:expr, $t:ty ) => {
+            eprintln!("{:?}", $m);
+            std::process::exit(1);
+            return <$t as Default>::default() as $t
+        }
+    }

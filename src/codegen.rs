@@ -52,7 +52,7 @@ fn gen(func: Function, label: usize) {
                         print!("\tdiv {}\n", REGS[ir.rhs]);
                         print!("\tmov {}, rax\n", REGS[ir.lhs]);
                     }
-                    _ => assert!(false),
+                    _ => unreachable!("unexpected IR Ope {}", o),
                 }
             },
             IRType::CALL => {
@@ -92,7 +92,7 @@ fn gen(func: Function, label: usize) {
                 print!("\tmov [{}], {}\n", REGS[ir.lhs], REGS[ir.rhs]);
             },
             IRType::NOP => {},
-            IRType::KILL => assert!(false),
+            IRType::KILL => unreachable!("unexpected IRType KILL"),
         }
     }
 

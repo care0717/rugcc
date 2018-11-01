@@ -1,5 +1,5 @@
 extern crate rugcc;
-use self::rugcc::common::{IR, error, IRType, IRInfoType, Function};
+use self::rugcc::common::{IR, IRType, IRInfoType, Function};
 use REGS;
 
 fn alloc(ir_reg: usize, reg_map: &mut Vec<i32>, used: &mut Vec<bool>) -> usize{
@@ -17,8 +17,7 @@ fn alloc(ir_reg: usize, reg_map: &mut Vec<i32>, used: &mut Vec<bool>) -> usize{
         reg_map[ir_reg] = i as i32;
         return i;
     }
-    error("register exhausted".to_string());
-    return 0
+    unreachable!("register exhausted")
 }
 
 fn visit(irs: &mut Vec<IR>, reg_map: &mut Vec<i32>, used: &mut Vec<bool>) {
