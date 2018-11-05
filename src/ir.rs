@@ -141,22 +141,26 @@ impl IrGenerator {
                 self.add(IRType::KILL, rhs, 0);
             },
             ND::IF => {
-                let r = self.gen_expr(*node.cond.unwrap());
                 let x = self.label;
                 self.label += 1;
-                self.add(IRType::UNLESS, r, x);
-                self.add(IRType::KILL, r, 0);
-                self.gen_stmt(*node.then.unwrap());
-                if node.els.is_none() {
+                if node.els.is_some() {
+                    let y = self.label;
+                    self.label += 1;
+                    let r = self.gen_expr(*node.cond.unwrap());
+                    self.add(IRType::UNLESS, r, x);
+                    self.add(IRType::KILL, r, 0);
+                    self.gen_stmt(*node.then.unwrap());
+                    self.add(IRType::JMP, y, 0);
                     self.add(IRType::LABEL, x, 0);
-                    return;
+                    self.gen_stmt(*node.els.unwrap());
+                    self.add(IRType::LABEL, y, 0);
+                } else {
+                    let r = self.gen_expr(*node.cond.unwrap());
+                    self.add(IRType::UNLESS, r, x);
+                    self.add(IRType::KILL, r, 0);
+                    self.gen_stmt(*node.then.unwrap());
+                    self.add(IRType::LABEL, x, 0);
                 }
-                let y = self.label;
-                self.label += 1;
-                self.add(IRType::JMP, y, 0);
-                self.add(IRType::LABEL, x, 0);
-                self.gen_stmt(*node.els.unwrap());
-                self.add(IRType::LABEL, y, 0);
             },
             ND::FOR => {
                 let x = self.label;
