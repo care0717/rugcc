@@ -16,6 +16,10 @@ impl IrGenerator {
         self.code.push(IR { op, lhs, rhs, ..Default::default()});
     }
 
+    fn kill(&mut self, r: usize) {  self.add(IRType::KILL, r, 0); }
+
+    fn label(&mut self, x: usize) { self.add(IRType::LABEL, x, 0); }
+
     fn gen_lval(&mut self, node: Node) -> usize {
         if node.ty != ND::LVAR {
             unreachable!("not an lvalue: {:?} ({})", node.ty, node.val);
@@ -32,7 +36,7 @@ impl IrGenerator {
         let r1 = self.gen_expr(lhs);
         let r2 = self.gen_expr(rhs);
         self.add(ty, r1, r2);
-        self.add(IRType::KILL, r2, 0);
+        self.kill(r2);
         return r1;
     }
 
@@ -57,10 +61,10 @@ impl IrGenerator {
                 self.add(IRType::UNLESS, r1, x);
                 let r2 = self.gen_expr(*node.rhs.unwrap());
                 self.add(IRType::MOV, r1, r2);
-                self.add(IRType::KILL, r2, 0);
+                self.kill(r2);
                 self.add(IRType::UNLESS, r1, x);
                 self.add(IRType::IMM, r1, 1);
-                self.add(IRType::LABEL, x, 0);
+                self.label(x);
                 return r1
             },
             ND::LOGOR => {
@@ -73,14 +77,14 @@ impl IrGenerator {
                 self.add(IRType::UNLESS, r1, x);
                 self.add(IRType::IMM, r1, 1);
                 self.add(IRType::JMP, y, 0);
-                self.add(IRType::LABEL, x, 0);
+                self.label(x);
 
                 let r2 = self.gen_expr(*node.rhs.unwrap());
                 self.add(IRType::MOV, r1, r2);
-                self.add(IRType::KILL, r2, 0);
+                self.kill(r2);
                 self.add(IRType::UNLESS, r1, y);
                 self.add(IRType::IMM, r1, 1);
-                self.add(IRType::LABEL, y, 0);
+                self.label(y);
                 return r1;
             },
             ND::CALL => {
@@ -94,7 +98,7 @@ impl IrGenerator {
                 let ir = IR { op: IRType::CALL, lhs: r, rhs: 0, name: node.val, args, ..Default::default() };
                 self.code.push(ir.clone());
                 for i in ir.args {
-                    self.add(IRType::KILL, i, 0);
+                    self.kill(i);
                 }
                 return r
             },
@@ -102,7 +106,7 @@ impl IrGenerator {
                 let rhs = self.gen_expr(*node.rhs.unwrap());
                 let lhs = self.gen_lval(*node.lhs.unwrap());
                 self.add(IRType::STORE, lhs, rhs);
-                self.add(IRType::KILL, rhs, 0);
+                self.kill(rhs);
                 return lhs
             },
             ND::OPE('<') => {
@@ -126,8 +130,8 @@ impl IrGenerator {
                 self.add(IRType::MOV, lhs, 0);
                 self.add(IRType::SUB_IMM, lhs, node.offset);
                 self.add(IRType::STORE, lhs, rhs);
-                self.add(IRType::KILL, lhs, 0);
-                self.add(IRType::KILL, rhs, 0);
+                self.kill(lhs);
+                self.kill(rhs);
             },
             ND::IF => {
                 let x = self.label;
@@ -137,18 +141,18 @@ impl IrGenerator {
                     self.label += 1;
                     let r = self.gen_expr(*node.cond.unwrap());
                     self.add(IRType::UNLESS, r, x);
-                    self.add(IRType::KILL, r, 0);
+                    self.kill(r);
                     self.gen_stmt(*node.then.unwrap());
                     self.add(IRType::JMP, y, 0);
-                    self.add(IRType::LABEL, x, 0);
+                    self.label(x);
                     self.gen_stmt(*node.els.unwrap());
-                    self.add(IRType::LABEL, y, 0);
+                    self.label(y);
                 } else {
                     let r = self.gen_expr(*node.cond.unwrap());
                     self.add(IRType::UNLESS, r, x);
-                    self.add(IRType::KILL, r, 0);
+                    self.kill(r);
                     self.gen_stmt(*node.then.unwrap());
-                    self.add(IRType::LABEL, x, 0);
+                    self.label(x);
                 }
             },
             ND::FOR => {
@@ -157,24 +161,24 @@ impl IrGenerator {
                 let y = self.label;
                 self.label += 1;
                 self.gen_stmt(*node.init.unwrap());
-                self.add(IRType::LABEL, x, 0);
+                self.label(x);
                 let r2 = self.gen_expr(*node.cond.unwrap());
                 self.add(IRType::UNLESS, r2, y);
-                self.add(IRType::KILL, r2, 0);
+                self.kill(r2);
                 self.gen_stmt(*node.body.unwrap());
                 let r3 = self.gen_expr(*node.inc.unwrap());
-                self.add(IRType::KILL, r3, 0);
+                self.kill(r3);
                 self.add(IRType::JMP, x, 0);
-                self.add(IRType::LABEL, y, 0);
+                self.label(y);
             },
             ND::RETURN => {
                 let r = self.gen_expr(*node.expr.unwrap());
                 self.add(IRType::RETURN, r, 0);
-                self.add(IRType::KILL, r, 0);
+                self.kill(r);
             },
             ND::EXPR_STMT => {
                 let r = self.gen_expr(*node.expr.unwrap());
-                self.add(IRType::KILL, r, 0);
+                self.kill(r);
             },
             ND::COMP_STMT => {
                 for n in node.stmts {
