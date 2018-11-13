@@ -40,9 +40,9 @@ runtest 'int main() { return _plus(2, 3); }' 5
 runtest 'int one() { return 1; } int main() { return one(); }' 1
 runtest 'int one() { return 1; } int two() { return 2; } int main() { return one()+two(); }' 3
 
-runtest 'int mul(a, b) { return a * b; } int main() { return mul(2, 3); }' 6
-runtest 'int add(a,b,c,d,e,f) { return a+b+c+d+e+f; } int main() { return add(1,2,3,4,5,6); }' 21
-runtest 'int sum(a) { if (a) return a+sum(a-1); return 0; } int main() { return sum(10); }' 55
+runtest 'int mul(int a, int b) { return a * b; } int main() { return mul(2, 3); }' 6
+runtest 'int add(int a,int b,int c,int d,int e,int f) { return a+b+c+d+e+f; } int main() { return add(1,2,3,4,5,6); }' 21
+runtest 'int sum(int a) { if (a) return a+sum(a-1); return 0; } int main() { return sum(10); }' 55
 
 runtest 'int main() { return 0||0; }' 0
 runtest 'int main() { return 1||0; }' 1

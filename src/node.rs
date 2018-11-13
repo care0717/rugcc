@@ -203,6 +203,15 @@ fn decl(tokens: &mut Vec<Token>) -> Node {
 
     return node
 }
+
+fn param(tokens: &mut Vec<Token>) -> Node {
+    // intを読み捨てる
+    tokens.pop();
+    let token = tokens.pop().unwrap();
+    if token.ty != TK::IDENT { unreachable!("parameter name expected, but got {}", token.val); }
+    return Node {ty: ND::VARDEF, val: token.val, ..Default::default()}
+}
+
 fn expr_stmt(tokens: &mut Vec<Token>) -> Node {
     let node = Node {ty: ND::EXPR_STMT, expr: Some(Box::new(assign(tokens))), ..Default::default()};
     expect(TK::END_LINE, tokens);
@@ -285,9 +294,9 @@ fn function(tokens: &mut Vec<Token>) -> Node{
     expect(TK::OPE('('), tokens);
     let mut node = Node{ty: ND::FUNC, val: token.val, ..Default::default()};
     if !consume(TK::OPE(')'), tokens) {
-        node.args.push(term(tokens));
+        node.args.push(param(tokens));
         while consume(TK::OPE(','), tokens){
-            node.args.push(term(tokens));
+            node.args.push(param(tokens));
         }
         expect(TK::OPE(')'), tokens);
     }
@@ -390,8 +399,9 @@ mod tests {
             Token { ty: TK::IDENT, val: "b".to_string() }, Token { ty: TK::OPE('+'), val: "+".to_string() },
             Token { ty: TK::IDENT, val: "a".to_string() }, Token { ty: TK::RETURN, val: "return".to_string() },
             Token { ty: TK::OPE('{'), val: "{".to_string() }, Token { ty: TK::OPE(')'), val: ")".to_string() },
-            Token { ty: TK::IDENT, val: "b".to_string() }, Token { ty: TK::OPE(','), val: ",".to_string() },
-            Token { ty: TK::IDENT, val: "a".to_string() }, Token { ty: TK::OPE('('), val: "(".to_string() },
+            Token { ty: TK::IDENT, val: "b".to_string() }, Token { ty: TK::INT, val: "int".to_string() },
+            Token { ty: TK::OPE(','), val: ",".to_string() }, Token { ty: TK::IDENT, val: "a".to_string() },
+            Token { ty: TK::INT, val: "int".to_string() }, Token { ty: TK::OPE('('), val: "(".to_string() },
             Token { ty: TK::IDENT, val: "add".to_string() }, Token { ty: TK::INT, val: "int".to_string() }
         ];
 
@@ -402,8 +412,8 @@ mod tests {
                 ty: ND::FUNC,
                 val: "add".to_string(),
                 args: [
-                    Node { ty: ND::IDENT, val: "a".to_string(), ..Default::default() },
-                    Node { ty: ND::IDENT, val: "b".to_string(), ..Default::default() }
+                    Node { ty: ND::VARDEF, val: "a".to_string(), ..Default::default() },
+                    Node { ty: ND::VARDEF, val: "b".to_string(), ..Default::default() }
                 ].to_vec(),
                 body: Some(Box::new(Node {
                     ty: ND::COMP_STMT,

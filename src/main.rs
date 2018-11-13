@@ -5,6 +5,7 @@ use self::rugcc::common::{dump_ir};
 mod node;
 mod token;
 mod ir;
+mod sema;
 mod regalloc;
 mod codegen;
 
@@ -34,7 +35,9 @@ fn main() {
 
     let mut tokens = token::tokenize(input.chars().collect());
 
-    let nodes =  node::parse(&mut tokens);
+    let mut nodes =  node::parse(&mut tokens);
+    let mut sema = sema::SemaGenerator::new();
+    nodes = sema.sema(nodes);
     //eprintln!("{:?}", nodes);
     let mut fns = ir::IrGenerator::new().gen_ir(nodes);
     //eprintln!("{:?}", fns);

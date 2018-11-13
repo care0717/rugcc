@@ -1,18 +1,15 @@
 extern crate rugcc;
 use self::rugcc::common::{IR, ND, Node, IRType, Function};
-use std::collections::HashMap;
 
 pub struct IrGenerator {
     code: Vec<IR>,
     regno: usize,
-    vars: HashMap<String, usize>,
-    stack_size: usize,
     label: usize,
 }
 
 impl IrGenerator {
     pub fn new() -> IrGenerator {
-        return IrGenerator{code: Vec::new(), regno: 1, vars: HashMap::new(), label: 0, stack_size: 0}
+        return IrGenerator{code: Vec::new(), regno: 1, label: 0}
     }
 
     fn add(&mut self, op: IRType, lhs: usize, rhs: usize) {
@@ -20,18 +17,14 @@ impl IrGenerator {
     }
 
     fn gen_lval(&mut self, node: Node) -> usize {
-        if node.ty != ND::IDENT {
-            unreachable!("not an lvalue");
+        if node.ty != ND::LVAR {
+            unreachable!("not an lvalue: {:?} ({})", node.ty, node.val);
         }
-        if self.vars.get(&node.val.to_string()).is_none() {
-            unreachable!("undefined variable: {:?}", node.val);
-        }
-        let off = *self.vars.get(&node.val.to_string()).unwrap();
-
         let r = self.regno;
         self.regno += 1;
+
         self.add(IRType::MOV, r, 0);
-        self.code.push(IR { op: IRType::SUB_IMM, lhs: r, rhs: off, ..Default::default()});
+        self.add(IRType::SUB_IMM, r, node.offset);
         return r;
     }
 
@@ -49,10 +42,10 @@ impl IrGenerator {
             ND::NUM => {
                 let r = self.regno;
                 self.regno += 1;
-                self.add(IRType::IMM, r, node.val.parse().unwrap());
+                self.add(IRType::IMM, r, node.val.parse::<usize>().unwrap());
                 return r
             },
-            ND::IDENT => {
+            ND::LVAR => {
                 let r = self.gen_lval(node);
                 self.add(IRType::LOAD, r, r);
                 return r
@@ -118,24 +111,20 @@ impl IrGenerator {
             ND::OPE(o) =>{
                 return self.gen_binop(IRType::Ope(o), *node.lhs.unwrap(), *node.rhs.unwrap())
             },
-            _ => { unreachable!() }
+            _ => { unreachable!("unexpected node type:{:?}", node.ty)}
         }
     }
 
     fn gen_stmt(&mut self, node: Node) {
         match node.ty {
             ND::VARDEF => {
-                self.stack_size += 8;
-                self.vars.insert(node.val, self.stack_size);
-
                 if node.init.is_none() { return }
 
                 let rhs = self.gen_expr(*node.init.unwrap());
                 let lhs = self.regno;
                 self.regno += 1;
                 self.add(IRType::MOV, lhs, 0);
-                let ss = self.stack_size;
-                self.add(IRType::SUB_IMM, lhs, ss);
+                self.add(IRType::SUB_IMM, lhs, node.offset);
                 self.add(IRType::STORE, lhs, rhs);
                 self.add(IRType::KILL, lhs, 0);
                 self.add(IRType::KILL, rhs, 0);
@@ -195,17 +184,6 @@ impl IrGenerator {
             _ => unreachable!("unknown node: {:?}", node.ty)
         }
     }
-    fn gen_args(&mut self, nodes: Vec<Node>) {
-        if nodes.len() == 0 {
-            return
-        }
-        self.add(IRType::SAVE_ARGS, nodes.len(), 0);
-        for node in nodes {
-            if node.ty != ND::IDENT {  unreachable!("bad parameter: {:?}", node.ty); }
-            self.stack_size += 8;
-            self.vars.insert(node.val, self.stack_size);
-        }
-    }
 
     pub fn gen_ir(&mut self, nodes: Vec<Node>) -> Vec<Function> {
         let mut funcs = Vec::new();
@@ -213,12 +191,12 @@ impl IrGenerator {
             assert!(node.ty==ND::FUNC);
             self.code= Vec::new();
             self.regno = 1;
-            self.vars = HashMap::new();
-            self.stack_size = 0;
             let name = node.val.clone();
-            self.gen_args(node.args);
+            if node.args.len() > 0 {
+                self.add(IRType::SAVE_ARGS, node.args.len(), 0);
+            }
             self.gen_stmt(*node.body.unwrap());
-            funcs.push(Function{name, irs: self.code.clone(), stack_size: self.stack_size, ..Default::default()})
+            funcs.push(Function{name, irs: self.code.clone(), stack_size: node.stack_size, ..Default::default()})
         }
         return funcs
     }
@@ -308,8 +286,8 @@ mod tests {
                 ty: ND::FUNC,
                 val: "add".to_string(),
                 args: [
-                    Node { ty: ND::IDENT, val: "a".to_string(), ..Default::default() },
-                    Node { ty: ND::IDENT, val: "b".to_string(), ..Default::default() }
+                    Node { ty: ND::VARDEF, val: "a".to_string(), offset: 8, ..Default::default() },
+                    Node { ty: ND::VARDEF, val: "b".to_string(), offset: 16,..Default::default() }
                 ].to_vec(),
                 body: Some(Box::new(Node {
                     ty: ND::COMP_STMT,
@@ -318,12 +296,13 @@ mod tests {
                             ty: ND::RETURN,
                             expr: Some(Box::new(Node {
                                 ty: ND::OPE('+'),
-                                lhs: Some(Box::new(Node { ty: ND::IDENT, val: "a".to_string(), ..Default::default() })),
-                                rhs: Some(Box::new(Node { ty: ND::IDENT, val: "b".to_string(), ..Default::default() })),
+                                lhs: Some(Box::new(Node { ty: ND::LVAR, val: "a".to_string(), offset: 8, ..Default::default() })),
+                                rhs: Some(Box::new(Node { ty: ND::LVAR, val: "b".to_string(), offset: 16, ..Default::default() })),
                                 ..Default::default() })),
                             ..Default::default()
                         }].to_vec(),
                     ..Default::default() })),
+                stack_size: 16,
                 ..Default::default()
             },
             Node {

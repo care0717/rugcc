@@ -109,7 +109,7 @@ mod tests {
 
     # [test]
     fn can_tokenize_function() {
-        let input = "int add(a,b) {return a+b;} int main() { return add(1,2); }".chars().collect();
+        let input = "int add(int a,int b) {return a+b;} int main() { return add(1,2); }".chars().collect();
 
         let result = tokenize(input);
 
@@ -126,8 +126,10 @@ mod tests {
             Token { ty: TK::IDENT, val: "b".to_string() }, Token { ty: TK::OPE('+'), val: "+".to_string() },
             Token { ty: TK::IDENT, val: "a".to_string() }, Token { ty: TK::RETURN, val: "return".to_string() },
             Token { ty: TK::OPE('{'), val: "{".to_string() }, Token { ty: TK::OPE(')'), val: ")".to_string() },
-            Token { ty: TK::IDENT, val: "b".to_string() }, Token { ty: TK::OPE(','), val: ",".to_string() },
-            Token { ty: TK::IDENT, val: "a".to_string() }, Token { ty: TK::OPE('('), val: "(".to_string() },
+            Token { ty: TK::IDENT, val: "b".to_string() }, Token { ty: TK::INT, val: "int".to_string() },
+            Token { ty: TK::OPE(','), val: ",".to_string() },
+            Token { ty: TK::IDENT, val: "a".to_string() },
+            Token { ty: TK::INT, val: "int".to_string() }, Token { ty: TK::OPE('('), val: "(".to_string() },
             Token { ty: TK::IDENT, val: "add".to_string() }, Token { ty: TK::INT, val: "int".to_string() }
         ];
 

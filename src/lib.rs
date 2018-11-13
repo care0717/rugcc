@@ -26,6 +26,7 @@ pub mod common {
         NUM,
         IDENT,
         VARDEF,
+        LVAR,
         CALL,
         FUNC,
         FOR,
@@ -55,12 +56,16 @@ pub mod common {
         pub inc: Option<Box<Node>>,
         pub args: Vec<Node>,
         pub body: Option<Box<Node>>,
+        // Function definition
+        pub stack_size: usize,
+        // Local variable
+        pub offset: usize,
     }
     impl Default for Node {
         fn default() -> Self {
             Self { ty: ND::NUM, lhs: None, rhs: None, val: String::new(), expr: None,
                 cond: None, then: None, els: None, init: None, inc: None, stmts: Vec::new(),
-                args: Vec::new(), body: None}
+                args: Vec::new(), body: None, stack_size: 0, offset: 0}
         }
     }
     impl Node {
