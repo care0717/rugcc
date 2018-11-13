@@ -21,8 +21,8 @@ impl IrGenerator {
     fn label(&mut self, x: usize) { self.add(IRType::LABEL, x, 0); }
 
     fn gen_lval(&mut self, node: Node) -> usize {
-        if node.ty != ND::LVAR {
-            unreachable!("not an lvalue: {:?} ({})", node.ty, node.val);
+        if node.op != ND::LVAR {
+            unreachable!("not an lvalue: {:?} ({})", node.op, node.val);
         }
         let r = self.regno;
         self.regno += 1;
@@ -42,7 +42,7 @@ impl IrGenerator {
 
 
     fn gen_expr(&mut self, node: Node) -> usize {
-        match node.ty {
+        match node.op {
             ND::NUM => {
                 let r = self.regno;
                 self.regno += 1;
@@ -102,6 +102,11 @@ impl IrGenerator {
                 }
                 return r
             },
+            ND::DEREF => {
+                let r = self.gen_expr(*node.expr.unwrap());
+                self.add(IRType::LOAD, r, r);
+                return r
+            },
             ND::OPE('=') => {
                 let rhs = self.gen_expr(*node.rhs.unwrap());
                 let lhs = self.gen_lval(*node.lhs.unwrap());
@@ -115,12 +120,12 @@ impl IrGenerator {
             ND::OPE(o) =>{
                 return self.gen_binop(IRType::Ope(o), *node.lhs.unwrap(), *node.rhs.unwrap())
             },
-            _ => { unreachable!("unexpected node type:{:?}", node.ty)}
+            _ => { unreachable!("unexpected node type:{:?}", node.op)}
         }
     }
 
     fn gen_stmt(&mut self, node: Node) {
-        match node.ty {
+        match node.op {
             ND::VARDEF => {
                 if node.init.is_none() { return }
 
@@ -185,14 +190,14 @@ impl IrGenerator {
                     self.gen_stmt(n);
                 }
             },
-            _ => unreachable!("unknown node: {:?}", node.ty)
+            _ => unreachable!("unknown node: {:?}", node.op)
         }
     }
 
     pub fn gen_ir(&mut self, nodes: Vec<Node>) -> Vec<Function> {
         let mut funcs = Vec::new();
         for node in nodes {
-            assert!(node.ty==ND::FUNC);
+            assert!(node.op ==ND::FUNC);
             self.code= Vec::new();
             self.regno = 1;
             let name = node.val.clone();
@@ -214,38 +219,38 @@ mod tests {
     fn can_gen_ir_arithmetic_expr() {
         let input = [
             Node {
-                ty: ND::FUNC,
+                op: ND::FUNC,
                 val: "main".to_string(),
                 body: Some(Box::new(Node {
-                    ty: ND::COMP_STMT,
+                    op: ND::COMP_STMT,
                     stmts: [
                         Node {
-                            ty: ND::RETURN,
+                            op: ND::RETURN,
                             expr: Some(Box::new(Node {
-                                ty: ND::OPE('-'),
+                                op: ND::OPE('-'),
                                 lhs: Some(Box::new(Node {
-                                    ty: ND::OPE('/'),
+                                    op: ND::OPE('/'),
                                     lhs: Some(Box::new(Node {
-                                        ty: ND::OPE('+'),
+                                        op: ND::OPE('+'),
                                         lhs: Some(Box::new(Node {
-                                            ty: ND::NUM,
+                                            op: ND::NUM,
                                             val: "2".to_string(), ..Default::default() })),
                                         rhs: Some(Box::new(Node {
-                                            ty: ND::OPE('*'),
+                                            op: ND::OPE('*'),
                                             lhs: Some(Box::new(Node {
-                                                ty: ND::NUM,
+                                                op: ND::NUM,
                                                 val: "2".to_string(), ..Default::default()})),
                                             rhs: Some(Box::new(Node {
-                                                ty: ND::NUM,
+                                                op: ND::NUM,
                                                 val: "3".to_string(), ..Default::default()})),
                                             ..Default::default()})),
                                         ..Default::default()})),
                                     rhs: Some(Box::new(Node {
-                                        ty: ND::NUM,
+                                        op: ND::NUM,
                                         val: "2".to_string(), ..Default::default()
                                     })),  ..Default::default()})),
                                 rhs: Some(Box::new(Node {
-                                    ty: ND::NUM,
+                                    op: ND::NUM,
                                     val: "1".to_string(), ..Default::default() })),
                                 ..Default::default()
                             })),
@@ -287,21 +292,21 @@ mod tests {
     fn can_gen_ir_function() {
         let input = [
             Node {
-                ty: ND::FUNC,
+                op: ND::FUNC,
                 val: "add".to_string(),
                 args: [
-                    Node { ty: ND::VARDEF, val: "a".to_string(), offset: 8, ..Default::default() },
-                    Node { ty: ND::VARDEF, val: "b".to_string(), offset: 16,..Default::default() }
+                    Node { op: ND::VARDEF, val: "a".to_string(), offset: 8, ..Default::default() },
+                    Node { op: ND::VARDEF, val: "b".to_string(), offset: 16,..Default::default() }
                 ].to_vec(),
                 body: Some(Box::new(Node {
-                    ty: ND::COMP_STMT,
+                    op: ND::COMP_STMT,
                     stmts: [
                         Node {
-                            ty: ND::RETURN,
+                            op: ND::RETURN,
                             expr: Some(Box::new(Node {
-                                ty: ND::OPE('+'),
-                                lhs: Some(Box::new(Node { ty: ND::LVAR, val: "a".to_string(), offset: 8, ..Default::default() })),
-                                rhs: Some(Box::new(Node { ty: ND::LVAR, val: "b".to_string(), offset: 16, ..Default::default() })),
+                                op: ND::OPE('+'),
+                                lhs: Some(Box::new(Node { op: ND::LVAR, val: "a".to_string(), offset: 8, ..Default::default() })),
+                                rhs: Some(Box::new(Node { op: ND::LVAR, val: "b".to_string(), offset: 16, ..Default::default() })),
                                 ..Default::default() })),
                             ..Default::default()
                         }].to_vec(),
@@ -310,19 +315,19 @@ mod tests {
                 ..Default::default()
             },
             Node {
-                ty: ND::FUNC,
+                op: ND::FUNC,
                 val: "main".to_string(),
                 body: Some(Box::new(Node {
-                    ty: ND::COMP_STMT,
+                    op: ND::COMP_STMT,
                     stmts: [
                         Node {
-                            ty: ND::RETURN,
+                            op: ND::RETURN,
                             expr: Some(Box::new(Node {
-                                ty: ND::CALL,
+                                op: ND::CALL,
                                 val: "add".to_string(),
                                 args: [
-                                    Node { ty: ND::NUM, val: "1".to_string(), ..Default::default()},
-                                    Node { ty: ND::NUM, val: "2".to_string(), ..Default::default() }
+                                    Node { op: ND::NUM, val: "1".to_string(), ..Default::default()},
+                                    Node { op: ND::NUM, val: "2".to_string(), ..Default::default() }
                                 ].to_vec(), ..Default::default() })),
                             ..Default::default() }
                     ].to_vec(),

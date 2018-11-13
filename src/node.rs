@@ -1,42 +1,14 @@
 extern crate rugcc;
-use self::rugcc::common::{TK, Token, ND,  Node};
+use self::rugcc::common::{TK, Token, ND,  Node, TY, Type};
 
 use std;
 
-fn new_node(ty: ND, lhs: Node, rhs: Node) -> Node {
-    return Node{ty, lhs: Some(Box::new(lhs)), rhs: Some(Box::new(rhs)), ..Default::default()};
+fn ptr_of(base: Type) -> Type {
+    return Type{ty: TY::PTR, ptr_of: Some(Box::new(base))}
 }
 
-fn term(tokens: &mut Vec<Token>) -> Node {
-    let token = tokens.pop().unwrap();
-
-    match token.ty {
-        TK::OPE('(') => {
-            let node = assign(tokens);
-            expect(TK::OPE(')'), tokens);
-            return node
-        },
-        TK::NUM => {
-            return Node{ty: ND::NUM, val: token.val, ..Default::default()};
-        },
-        TK::IDENT => {
-            let mut node = Node{ty: ND::IDENT, val: token.val, ..Default::default()};
-            if !consume(TK::OPE('('), tokens) {
-                return node
-            }
-            node.ty = ND::CALL;
-            if consume(TK::OPE(')'), tokens) {return node}
-            node.args.push(assign(tokens));
-            while consume(TK::OPE(','), tokens) {
-                node.args.push(assign(tokens));
-            }
-            expect(TK::OPE(')'), tokens);
-            return node
-        },
-        _ => {
-            unreachable!("number expected, but got {}", token.val);
-        },
-    }
+fn new_node(ty: ND, lhs: Node, rhs: Node) -> Node {
+    return Node{ op: ty, lhs: Some(Box::new(lhs)), rhs: Some(Box::new(rhs)), ..Default::default()};
 }
 
 fn expect(ty: TK, tokens: &mut Vec<Token>) {
@@ -67,14 +39,53 @@ fn is_typename(tokens: &Vec<Token>) -> bool {
     return tokens[tokens.len()-1].ty==TK::INT
 }
 
+fn term(tokens: &mut Vec<Token>) -> Node {
+    let token = tokens.pop().unwrap();
+
+    match token.ty {
+        TK::OPE('(') => {
+            let node = assign(tokens);
+            expect(TK::OPE(')'), tokens);
+            return node
+        },
+        TK::NUM => {
+            return Node{ op: ND::NUM, val: token.val, ..Default::default()};
+        },
+        TK::IDENT => {
+            let mut node = Node{ op: ND::IDENT, val: token.val, ..Default::default()};
+            if !consume(TK::OPE('('), tokens) {
+                return node
+            }
+            node.op = ND::CALL;
+            if consume(TK::OPE(')'), tokens) {return node}
+            node.args.push(assign(tokens));
+            while consume(TK::OPE(','), tokens) {
+                node.args.push(assign(tokens));
+            }
+            expect(TK::OPE(')'), tokens);
+            return node
+        },
+        _ => {
+            unreachable!("number expected, but got {}", token.val);
+        },
+    }
+}
+
+fn unary(tokens: &mut Vec<Token>) -> Node {
+    if consume(TK::OPE('*'), tokens) {
+        return Node{op: ND::DEREF, expr: Some(Box::new(mul(tokens))), ..Default::default()}
+    }
+    return term(tokens)
+}
+
 fn mul(tokens: &mut Vec<Token>) -> Node {
-    let mut lhs = term(tokens);
+    let mut lhs = unary(tokens);
     loop {
         let token = tokens.pop().unwrap();
         match token.ty {
             TK::OPE(o) => {
                 match o {
-                    '*' | '/' => lhs = new_node(ND::OPE(o), lhs, term(tokens)),
+                    '*' | '/' => lhs = new_node(ND::OPE(o), lhs, unary(tokens)),
                     _ => {
                         tokens.push(token);
                         break
@@ -192,8 +203,20 @@ fn assign(tokens: &mut Vec<Token>) -> Node {
     }
 }
 
+fn get_type(tokens: &mut Vec<Token>) -> Type {
+    let token = tokens.pop().unwrap();
+    if token.ty != TK::INT {
+        unreachable!("typename expected, but got {:?}", token.ty);
+    }
+    let mut ty = Type{..Default::default()};
+    while consume(TK::OPE('*'), tokens) {
+        ty = ptr_of(ty);
+    }
+    return ty
+}
+
 fn decl(tokens: &mut Vec<Token>) -> Node {
-    let mut node = Node {ty: ND::VARDEF, ..Default::default()};
+    let mut node = Node { op: ND::VARDEF, ty: get_type(tokens), ..Default::default()};
     let token = tokens.pop().unwrap();
     if token.ty != TK::IDENT { unreachable!("variable name expected, but got {}", token.val);}
     node.val = token.val;
@@ -205,27 +228,30 @@ fn decl(tokens: &mut Vec<Token>) -> Node {
 }
 
 fn param(tokens: &mut Vec<Token>) -> Node {
-    // intを読み捨てる
-    tokens.pop();
+    let mut node = Node { op: ND::VARDEF, ty: get_type(tokens), ..Default::default()};
     let token = tokens.pop().unwrap();
     if token.ty != TK::IDENT { unreachable!("parameter name expected, but got {}", token.val); }
-    return Node {ty: ND::VARDEF, val: token.val, ..Default::default()}
+    node.val = token.val;
+    return node
 }
 
 fn expr_stmt(tokens: &mut Vec<Token>) -> Node {
-    let node = Node {ty: ND::EXPR_STMT, expr: Some(Box::new(assign(tokens))), ..Default::default()};
+    let node = Node { op: ND::EXPR_STMT, expr: Some(Box::new(assign(tokens))), ..Default::default()};
     expect(TK::END_LINE, tokens);
     return node;
 }
 
 fn stmt(tokens: &mut Vec<Token>) -> Node {
     let token = tokens.pop().unwrap();
-    let mut node = Node {ty: ND::EXPR_STMT, ..Default::default()};
+    let mut node = Node { op: ND::EXPR_STMT, ..Default::default()};
 
     match token.ty {
-        TK::INT => { decl(tokens) },
+        TK::INT => {
+            tokens.push(token);
+            decl(tokens)
+        },
         TK::IF => {
-            node.ty = ND::IF;
+            node.op = ND::IF;
             expect(TK::OPE('('), tokens);
             node.cond = Some(Box::new(assign(tokens)));
             expect(TK::OPE(')'), tokens);
@@ -234,17 +260,16 @@ fn stmt(tokens: &mut Vec<Token>) -> Node {
             return node
         },
         TK::OPE('{') => {
-            node.ty = ND::COMP_STMT;
+            node.op = ND::COMP_STMT;
             while !consume(TK::OPE('}'), tokens) {
                 node.stmts.push(stmt(tokens));
             }
             return node;
         },
         TK::FOR => {
-            node.ty = ND::FOR;
+            node.op = ND::FOR;
             expect(TK::OPE('('), tokens);
             if is_typename(tokens) {
-                tokens.pop();
                 node.init = Some(Box::new(decl(tokens)));
             } else {
                 node.init = Some(Box::new(expr_stmt(tokens)));
@@ -257,7 +282,7 @@ fn stmt(tokens: &mut Vec<Token>) -> Node {
             return node;
         },
         TK::RETURN => {
-            node.ty = ND::RETURN;
+            node.op = ND::RETURN;
             node.expr = Some(Box::new(assign(tokens)));
             expect(TK::END_LINE, tokens);
             return node
@@ -270,7 +295,7 @@ fn stmt(tokens: &mut Vec<Token>) -> Node {
 }
 
 fn compound_stmt(tokens: &mut Vec<Token>) -> Node{
-    let mut node = Node{ty: ND::COMP_STMT, ..Default::default()};
+    let mut node = Node{ op: ND::COMP_STMT, ..Default::default()};
     while !consume(TK::OPE('}'), tokens) {
         let optoken = tokens.pop();
         if optoken.is_none() {return node}
@@ -292,7 +317,7 @@ fn function(tokens: &mut Vec<Token>) -> Node{
     let token = tokens.pop().unwrap();
     if token.ty != TK::IDENT {unreachable!("function name expected, but got {}", token.val)}
     expect(TK::OPE('('), tokens);
-    let mut node = Node{ty: ND::FUNC, val: token.val, ..Default::default()};
+    let mut node = Node{ op: ND::FUNC, val: token.val, ..Default::default()};
     if !consume(TK::OPE(')'), tokens) {
         node.args.push(param(tokens));
         while consume(TK::OPE(','), tokens){
@@ -339,38 +364,38 @@ mod tests {
 
         let expect = [
             Node {
-                ty: ND::FUNC,
+                op: ND::FUNC,
                 val: "main".to_string(),
                 body: Some(Box::new(Node {
-                    ty: ND::COMP_STMT,
+                    op: ND::COMP_STMT,
                     stmts: [
                         Node {
-                            ty: ND::RETURN,
+                            op: ND::RETURN,
                             expr: Some(Box::new(Node {
-                                ty: ND::OPE('-'),
+                                op: ND::OPE('-'),
                                 lhs: Some(Box::new(Node {
-                                    ty: ND::OPE('/'),
+                                    op: ND::OPE('/'),
                                     lhs: Some(Box::new(Node {
-                                        ty: ND::OPE('+'),
+                                        op: ND::OPE('+'),
                                         lhs: Some(Box::new(Node {
-                                            ty: ND::NUM,
+                                            op: ND::NUM,
                                             val: "2".to_string(), ..Default::default() })),
                                         rhs: Some(Box::new(Node {
-                                            ty: ND::OPE('*'),
+                                            op: ND::OPE('*'),
                                             lhs: Some(Box::new(Node {
-                                                ty: ND::NUM,
+                                                op: ND::NUM,
                                                 val: "2".to_string(), ..Default::default()})),
                                             rhs: Some(Box::new(Node {
-                                                ty: ND::NUM,
+                                                op: ND::NUM,
                                                 val: "3".to_string(), ..Default::default()})),
                                             ..Default::default()})),
                                         ..Default::default()})),
                                     rhs: Some(Box::new(Node {
-                                        ty: ND::NUM,
+                                        op: ND::NUM,
                                         val: "2".to_string(), ..Default::default()
                                          })),  ..Default::default()})),
                                 rhs: Some(Box::new(Node {
-                                    ty: ND::NUM,
+                                    op: ND::NUM,
                                     val: "1".to_string(), ..Default::default() })),
                                 ..Default::default()
                                 })),
@@ -409,21 +434,21 @@ mod tests {
 
         let expect = [
             Node {
-                ty: ND::FUNC,
+                op: ND::FUNC,
                 val: "add".to_string(),
                 args: [
-                    Node { ty: ND::VARDEF, val: "a".to_string(), ..Default::default() },
-                    Node { ty: ND::VARDEF, val: "b".to_string(), ..Default::default() }
+                    Node { op: ND::VARDEF, val: "a".to_string(), ..Default::default() },
+                    Node { op: ND::VARDEF, val: "b".to_string(), ..Default::default() }
                 ].to_vec(),
                 body: Some(Box::new(Node {
-                    ty: ND::COMP_STMT,
+                    op: ND::COMP_STMT,
                     stmts: [
                         Node {
-                            ty: ND::RETURN,
+                            op: ND::RETURN,
                             expr: Some(Box::new(Node {
-                                ty: ND::OPE('+'),
-                                lhs: Some(Box::new(Node { ty: ND::IDENT, val: "a".to_string(), ..Default::default() })),
-                                rhs: Some(Box::new(Node { ty: ND::IDENT, val: "b".to_string(), ..Default::default() })),
+                                op: ND::OPE('+'),
+                                lhs: Some(Box::new(Node { op: ND::IDENT, val: "a".to_string(), ..Default::default() })),
+                                rhs: Some(Box::new(Node { op: ND::IDENT, val: "b".to_string(), ..Default::default() })),
                                 ..Default::default() })),
                             ..Default::default()
                         }].to_vec(),
@@ -431,19 +456,19 @@ mod tests {
                 ..Default::default()
             },
             Node {
-                ty: ND::FUNC,
+                op: ND::FUNC,
                 val: "main".to_string(),
                 body: Some(Box::new(Node {
-                    ty: ND::COMP_STMT,
+                    op: ND::COMP_STMT,
                     stmts: [
                         Node {
-                            ty: ND::RETURN,
+                            op: ND::RETURN,
                             expr: Some(Box::new(Node {
-                                ty: ND::CALL,
+                                op: ND::CALL,
                                 val: "add".to_string(),
                                 args: [
-                                    Node { ty: ND::NUM, val: "1".to_string(), ..Default::default()},
-                                    Node { ty: ND::NUM, val: "2".to_string(), ..Default::default() }
+                                    Node { op: ND::NUM, val: "1".to_string(), ..Default::default()},
+                                    Node { op: ND::NUM, val: "2".to_string(), ..Default::default() }
                                 ].to_vec(), ..Default::default() })),
                             ..Default::default() }
                     ].to_vec(),

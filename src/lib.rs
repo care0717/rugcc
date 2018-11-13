@@ -27,6 +27,7 @@ pub mod common {
         IDENT,
         VARDEF,
         LVAR,
+        DEREF,     // pointer dereference ("*")
         CALL,
         FUNC,
         FOR,
@@ -39,9 +40,27 @@ pub mod common {
         EXPR_STMT,
     }
 
+    #[derive(PartialEq, Debug, Clone)]
+    pub enum TY {
+        INT,
+        PTR,
+    }
+    #[derive(PartialEq, Debug, Clone)]
+    pub struct Type {
+        pub ty: TY,
+        pub ptr_of: Option<Box<Type>>,
+    }
+    impl Default for Type {
+        fn default() -> Self {
+            Type{ ty: TY::INT, ptr_of: None}
+        }
+    }
+
+
     #[derive(Debug, PartialEq, Clone)]
     pub struct Node {
-        pub ty: ND,
+        pub op: ND,
+        pub ty: Type,
         pub lhs: Option<Box<Node>>,
         pub rhs: Option<Box<Node>>,
         pub val: String,
@@ -63,14 +82,14 @@ pub mod common {
     }
     impl Default for Node {
         fn default() -> Self {
-            Self { ty: ND::NUM, lhs: None, rhs: None, val: String::new(), expr: None,
+            Self { op: ND::NUM, ty: Type{..Default::default()}, lhs: None, rhs: None, val: String::new(), expr: None,
                 cond: None, then: None, els: None, init: None, inc: None, stmts: Vec::new(),
                 args: Vec::new(), body: None, stack_size: 0, offset: 0}
         }
     }
     impl Node {
         pub fn get_ope(&self) -> char {
-            match self.ty {
+            match self.op {
                 ND::OPE(c) => return c,
                 _ => {
                     assert!(false);
