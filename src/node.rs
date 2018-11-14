@@ -1,10 +1,10 @@
 extern crate rugcc;
-use self::rugcc::common::{TK, Token, ND,  Node, Type};
+use self::rugcc::common::{TK, Token, ND,  Node, Type, TY};
 
 use std;
 
-fn new_node(ty: ND, lhs: Node, rhs: Node) -> Node {
-    return Node{ op: ty, lhs: Some(Box::new(lhs)), rhs: Some(Box::new(rhs)), ..Default::default()};
+fn new_node(op: ND, lhs: Node, rhs: Node) -> Node {
+    return Node{ op, lhs: Some(Box::new(lhs)), rhs: Some(Box::new(rhs)), ..Default::default()};
 }
 
 fn expect(ty: TK, tokens: &mut Vec<Token>) {
@@ -485,6 +485,112 @@ mod tests {
                     ..Default::default()})),
                 ..Default::default()
             }];
+
+        assert_eq!(result.len(), expect.len());
+        for i in 0..result.len() {
+            assert_eq!(result[i], expect[i]);
+        }
+    }
+
+    # [test]
+    fn can_parse_pointer() {
+        let input = [
+            Token { ty: TK::EOF, val: "EOF".to_string() }, Token { ty: TK::OPE('}'), val: "}".to_string() },
+            Token { ty: TK::END_LINE, val: ";".to_string() }, Token { ty: TK::OPE(')'), val: ")".to_string() },
+            Token { ty: TK::NUM, val: "1".to_string() }, Token { ty: TK::OPE('+'), val: "+".to_string() },
+            Token { ty: TK::IDENT, val: "ary".to_string() }, Token { ty: TK::OPE('('), val: "(".to_string() },
+            Token { ty: TK::OPE('*'), val: "*".to_string() }, Token { ty: TK::OPE('+'), val: "+".to_string() },
+            Token { ty: TK::IDENT, val: "ary".to_string() }, Token { ty: TK::OPE('*'), val: "*".to_string() },
+            Token { ty: TK::RETURN, val: "return".to_string() }, Token { ty: TK::END_LINE, val: ";".to_string() },
+            Token { ty: TK::NUM, val: "7".to_string() }, Token { ty: TK::OPE('='), val: "=".to_string() },
+            Token { ty: TK::OPE(')'), val: ")".to_string() }, Token { ty: TK::NUM, val: "1".to_string() },
+            Token { ty: TK::OPE('+'), val: "+".to_string() }, Token { ty: TK::IDENT, val: "ary".to_string() },
+            Token { ty: TK::OPE('('), val: "(".to_string() }, Token { ty: TK::OPE('*'), val: "*".to_string() },
+            Token { ty: TK::END_LINE, val: ";".to_string() }, Token { ty: TK::NUM, val: "3".to_string() },
+            Token { ty: TK::OPE('='), val: "=".to_string() }, Token { ty: TK::IDENT, val: "ary".to_string() },
+            Token { ty: TK::OPE('*'), val: "*".to_string() }, Token { ty: TK::END_LINE, val: ";".to_string() },
+            Token { ty: TK::OPE(']'), val: "]".to_string() }, Token { ty: TK::NUM, val: "2".to_string() },
+            Token { ty: TK::OPE('['), val: "[".to_string() }, Token { ty: TK::IDENT, val: "ary".to_string() },
+            Token { ty: TK::INT, val: "int".to_string() }, Token { ty: TK::OPE('{'), val: "{".to_string() },
+            Token { ty: TK::OPE(')'), val: ")".to_string() }, Token { ty: TK::OPE('('), val: "(".to_string() },
+            Token { ty: TK::IDENT, val: "main".to_string() }, Token { ty: TK::INT, val: "int".to_string() }
+        ];
+
+        let result = parse(&mut input.to_vec());
+        
+        let expect = [
+            Node {
+                op: ND::FUNC,
+                val: "main".to_string(),
+                body: Some(Box::new(Node {
+                    op: ND::COMP_STMT,
+                    stmts: [
+                        Node {
+                            op: ND::VARDEF,
+                            ty: Type { ty: TY::ARY, ary_of: Some(Box::new(Type {..Default::default()})), len: 2, ..Default::default()},
+                            val: "ary".to_string(), ..Default::default()
+                        },
+                        Node {
+                            op: ND::EXPR_STMT,
+                            expr: Some(Box::new(Node {
+                                op: ND::OPE('='),
+                                lhs: Some(Box::new(Node {
+                                    op: ND::DEREF,
+                                    expr: Some(Box::new(Node {
+                                        op: ND::IDENT,
+                                        val: "ary".to_string(), ..Default::default() })),
+                                    ..Default::default() })),
+                                rhs: Some(Box::new(Node {
+                                    op: ND::NUM,
+                                    val: "3".to_string(), ..Default::default() })), ..Default::default()})),
+                            ..Default::default()},
+                        Node {
+                            op: ND::EXPR_STMT,
+                            expr: Some(Box::new(Node {
+                                op: ND::OPE('='),
+                                lhs: Some(Box::new(Node {
+                                    op: ND::DEREF,
+                                    expr: Some(Box::new(Node {
+                                        op: ND::OPE('+'),
+                                        lhs: Some(Box::new(Node {
+                                            op: ND::IDENT,
+                                            val: "ary".to_string(), ..Default::default() })),
+                                        rhs: Some(Box::new(Node {
+                                            op: ND::NUM,
+                                            val: "1".to_string(),
+                                            ..Default::default()})),
+                                        ..Default::default()})),
+                                    ..Default::default()})),
+                                rhs: Some(Box::new(Node { op: ND::NUM, val: "7".to_string(), ..Default::default() })),
+                                ..Default::default()})),
+                            ..Default::default()},
+                        Node {
+                            op: ND::RETURN,
+                            expr: Some(Box::new(Node {
+                                op: ND::OPE('+'),
+                                lhs: Some(Box::new(Node {
+                                    op: ND::DEREF,
+                                    expr: Some(Box::new(Node {
+                                        op: ND::IDENT,
+                                        val: "ary".to_string(), ..Default::default() })),
+                                    ..Default::default() })),
+                                rhs: Some(Box::new(Node {
+                                    op: ND::DEREF,
+                                    expr: Some(Box::new(Node {
+                                        op: ND::OPE('+'),
+                                        lhs: Some(Box::new(Node {
+                                            op: ND::IDENT,
+                                            val: "ary".to_string(), ..Default::default()})),
+                                        rhs: Some(Box::new(Node {
+                                            op: ND::NUM,
+                                            val: "1".to_string(), ..Default::default() })),
+                                        ..Default::default() })),
+                                    ..Default::default() })),
+                                ..Default::default() })),
+                            ..Default::default() }].to_vec(),
+                    ..Default::default() })),
+                ..Default::default() }
+        ];
 
         assert_eq!(result.len(), expect.len());
         for i in 0..result.len() {

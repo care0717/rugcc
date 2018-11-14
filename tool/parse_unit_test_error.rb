@@ -6,7 +6,7 @@ def parce_like_json_string(str, i)
   key = ""
   array = []
   h = {}
-  regax = /^[[:alpha:][0-9]\(\)\+\-*\/_]$/
+  regax = /^[[:alpha:][0-9]\(\)\+\-=*\/_]$/
   while i < str.size do
       c = str[i]
       if c == "{"

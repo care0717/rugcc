@@ -1,5 +1,5 @@
 extern crate rugcc;
-use self::rugcc::common::{IR, ND, Node, IRType, Function, TY};
+use self::rugcc::common::{IR, ND, Node, IRType, Function, TY, Type};
 
 pub struct IrGenerator {
     code: Vec<IR>,
@@ -396,6 +396,153 @@ mod tests {
                     IR { op: IRType::RETURN, lhs: 3, rhs: 0, ..Default::default() },
                     IR { op: IRType::KILL, lhs: 3, rhs: 0, ..Default::default() }].to_vec(),
                 stack_size: 0 }];
+
+        assert_eq!(result.len(), expect.len());
+        for i in 0..result.len() {
+            assert_eq!(result[i], expect[i]);
+        }
+    }
+
+    #[test]
+    fn can_gen_ir_pointer(){
+        let input = [
+            Node {
+                op: ND::FUNC,
+                val: "main".to_string(),
+                body: Some(Box::new(Node {
+                    op: ND::COMP_STMT,
+                    stmts: [
+                        Node {
+                            op: ND::VARDEF,
+                            ty: Type { ty: TY::ARY, ary_of: Some(Box::new(Type {..Default::default()})), len: 2, ..Default::default()},
+                            val: "ary".to_string(),
+                            offset: 8, ..Default::default()
+                        },
+                        Node {
+                            op: ND::EXPR_STMT,
+                            expr: Some(Box::new(Node {
+                                op: ND::OPE('='),
+                                lhs: Some(Box::new(Node {
+                                    op: ND::DEREF,
+                                    expr: Some(Box::new(Node {
+                                        op: ND::ADDR,
+                                        ty: Type { ty: TY::PTR, ptr_of: Some(Box::new(Type{..Default::default()})),..Default::default()},
+                                        expr: Some(Box::new(Node {
+                                            op: ND::LVAR,
+                                            val: "ary".to_string(),
+                                            offset: 8, ..Default::default()})),
+                                        ..Default::default() })),
+                                    ..Default::default() })),
+                                rhs: Some(Box::new(Node {
+                                    op: ND::NUM,
+                                    val: "3".to_string(), ..Default::default() })), ..Default::default()})),
+                            ..Default::default()},
+                        Node {
+                            op: ND::EXPR_STMT,
+                            expr: Some(Box::new(Node {
+                                op: ND::OPE('='),
+                                lhs: Some(Box::new(Node {
+                                    op: ND::DEREF,
+                                    expr: Some(Box::new(Node {
+                                        op: ND::OPE('+'),
+                                        ty: Type { ty: TY::PTR, ptr_of: Some(Box::new(Type{..Default::default()})), ..Default::default()},
+                                        lhs: Some(Box::new(Node {
+                                            op: ND::ADDR,
+                                            ty: Type { ty: TY::PTR, ptr_of: Some(Box::new(Type{..Default::default()})), ..Default::default()},
+                                            expr: Some(Box::new(Node {
+                                                op: ND::LVAR,
+                                                val: "ary".to_string(),
+                                                offset: 8, ..Default::default()})),
+                                            ..Default::default() })),
+                                        rhs: Some(Box::new(Node {
+                                            op: ND::NUM,
+                                            val: "1".to_string(),
+                                            ..Default::default()})),
+                                        ..Default::default()})),
+                                    ..Default::default()})),
+                                rhs: Some(Box::new(Node { op: ND::NUM, val: "7".to_string(), ..Default::default() })),
+                                ..Default::default()})),
+                            ..Default::default()},
+                        Node {
+                            op: ND::RETURN,
+                            expr: Some(Box::new(Node {
+                                op: ND::OPE('+'),
+                                lhs: Some(Box::new(Node {
+                                    op: ND::DEREF,
+                                    expr: Some(Box::new(Node {
+                                        op: ND::ADDR,
+                                        ty: Type { ty: TY::PTR, ptr_of: Some(Box::new(Type{..Default::default()})),..Default::default()},
+                                        expr: Some(Box::new(Node {
+                                            op: ND::LVAR,
+                                            val: "ary".to_string(),
+                                            offset: 8, ..Default::default()})),
+                                        ..Default::default() })),
+                                    ..Default::default() })),
+                                rhs: Some(Box::new(Node {
+                                    op: ND::DEREF,
+                                    expr: Some(Box::new(Node {
+                                        op: ND::OPE('+'),
+                                        ty: Type { ty: TY::PTR, ptr_of: Some(Box::new(Type{..Default::default()})), ..Default::default()},
+                                        lhs: Some(Box::new(Node {
+                                            op: ND::ADDR,
+                                            ty: Type { ty: TY::PTR, ptr_of: Some(Box::new(Type{..Default::default()})), ..Default::default()},
+                                            expr: Some(Box::new(Node {
+                                                op: ND::LVAR,
+                                                val: "ary".to_string(),
+                                                offset: 8, ..Default::default()})),
+                                            ..Default::default() })),
+                                        rhs: Some(Box::new(Node {
+                                            op: ND::NUM,
+                                            val: "1".to_string(), ..Default::default() })),
+                                        ..Default::default() })),
+                                    ..Default::default() })),
+                                ..Default::default() })),
+                            ..Default::default() }].to_vec(),
+                    ..Default::default() })),
+                stack_size: 8,
+                ..Default::default() }
+        ];
+
+        let result = IrGenerator::new().gen_ir(input.to_vec());
+
+        let expect = [
+            Function { name: "main".to_string(),
+                irs: [
+                    IR { op: IRType::IMM, lhs: 1, rhs: 3, ..Default::default() },
+                    IR { op: IRType::MOV, lhs: 2, rhs: 0, ..Default::default() },
+                    IR { op: IRType::SUB_IMM, lhs: 2, rhs: 8, ..Default::default() },
+                    IR { op: IRType::STORE32, lhs: 2, rhs: 1, ..Default::default() },
+                    IR { op: IRType::KILL, lhs: 1, rhs: 0, ..Default::default() },
+                    IR { op: IRType::KILL, lhs: 2, rhs: 0, ..Default::default() },
+                    IR { op: IRType::IMM, lhs: 3, rhs: 7, ..Default::default() },
+                    IR { op: IRType::IMM, lhs: 4, rhs: 1, ..Default::default() },
+                    IR { op: IRType::IMM, lhs: 5, rhs: 4, ..Default::default() },
+                    IR { op: IRType::MUL, lhs: 4, rhs: 5, ..Default::default() },
+                    IR { op: IRType::KILL, lhs: 5, rhs: 0, ..Default::default() },
+                    IR { op: IRType::MOV, lhs: 6, rhs: 0, ..Default::default() },
+                    IR { op: IRType::SUB_IMM, lhs: 6, rhs: 8, ..Default::default() },
+                    IR { op: IRType::ADD, lhs: 6, rhs: 4, ..Default::default() },
+                    IR { op: IRType::KILL, lhs: 4, rhs: 0, ..Default::default() },
+                    IR { op: IRType::STORE32, lhs: 6, rhs: 3, ..Default::default() },
+                    IR { op: IRType::KILL, lhs: 3, rhs: 0, ..Default::default() },
+                    IR { op: IRType::KILL, lhs: 6, rhs: 0, ..Default::default() },
+                    IR { op: IRType::MOV, lhs: 7, rhs: 0, ..Default::default() },
+                    IR { op: IRType::SUB_IMM, lhs: 7, rhs: 8, ..Default::default() },
+                    IR { op: IRType::LOAD64, lhs: 7, rhs: 7, ..Default::default() },
+                    IR { op: IRType::IMM, lhs: 8, rhs: 1, ..Default::default() },
+                    IR { op: IRType::IMM, lhs: 9, rhs: 4, ..Default::default() },
+                    IR { op: IRType::MUL, lhs: 8, rhs: 9, ..Default::default() },
+                    IR { op: IRType::KILL, lhs: 9, rhs: 0, ..Default::default() },
+                    IR { op: IRType::MOV, lhs: 10, rhs: 0, ..Default::default() },
+                    IR { op: IRType::SUB_IMM, lhs: 10, rhs: 8, ..Default::default() },
+                    IR { op: IRType::ADD, lhs: 10, rhs: 8, ..Default::default() },
+                    IR { op: IRType::KILL, lhs: 8, rhs: 0, ..Default::default() },
+                    IR { op: IRType::LOAD64, lhs: 10, rhs: 10, ..Default::default() },
+                    IR { op: IRType::ADD, lhs: 7, rhs: 10, ..Default::default() },
+                    IR { op: IRType::KILL, lhs: 10, rhs: 0, ..Default::default() },
+                    IR { op: IRType::RETURN, lhs: 7, rhs: 0, ..Default::default() },
+                    IR { op: IRType::KILL, lhs: 7, rhs: 0, ..Default::default() }].to_vec(),
+                stack_size: 8 }];
 
         assert_eq!(result.len(), expect.len());
         for i in 0..result.len() {
