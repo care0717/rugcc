@@ -89,5 +89,6 @@ runtest 'int main() { int i=1; int j=1; int k; int m; for (k=0; k<10; k=k+1) { m
 runtest 'int main() { int *p = alloc1(3,5); return *p + *(1 + p); }' 8
 runtest 'int main() { int *p = alloc2(2,7); return *p + *(p - 1); }' 9
 runtest 'int main() { int **p = alloc_ptr_ptr(2); return **p; }' 2
+runtest 'int main() { int ary[3]; *ary=2; *(ary+1)=4; *(ary+2)=6; return *ary + *(ary+1) + *(ary+2);}' 12
 
 echo "OK"

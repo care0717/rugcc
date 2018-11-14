@@ -1,9 +1,10 @@
 extern crate rugcc;
 use self::rugcc::common::{IRType, Function};
-use {REGS, REGS8};
+use {REGS, REGS8, REGS32};
 
 
-static ARGREG: [&str; 6] = ["rdi", "rsi", "rdx", "rcx", "r8", "r9"];
+static ARGREG64: [&str; 6] = ["rdi", "rsi", "rdx", "rcx", "r8", "r9"];
+static ARGREG32: [&str; 6] = ["edi", "esi", "edx", "ecx", "r8d", "r9d"];
 
 fn gen(func: Function, label: usize) {
     let ret = format!(".Lend{}", label);
@@ -47,7 +48,7 @@ fn gen(func: Function, label: usize) {
             },
             IRType::CALL => {
                 for i in 0..ir.args.clone().len(){
-                    print!("\tmov {}, {}\n", ARGREG[i], REGS[ir.args[i]]);
+                    print!("\tmov {}, {}\n", ARGREG64[i], REGS[ir.args[i]]);
                 }
                 print!("\tpush r10\n");
                 print!("\tpush r11\n");
@@ -57,10 +58,11 @@ fn gen(func: Function, label: usize) {
                 print!("\tpop r10\n");
                 print!("\tmov {}, rax\n", REGS[ir.lhs]);
             },
-            IRType::SAVE_ARGS => {
-                for i in 0..ir.lhs {
-                    print!("\tmov [rbp-{}], {}\n", (i + 1) * 8, ARGREG[i]);
-                }
+            IRType::STORE32_ARG => {
+                print!("\tmov [rbp-{}], {}\n", ir.lhs, ARGREG32[ir.rhs]);
+            },
+            IRType::STORE64_ARG => {
+                print!("\tmov [rbp-{}], {}\n", ir.lhs, ARGREG64[ir.rhs]);
             },
             IRType::LT => {
                 print!("\tcmp {}, {}\n", REGS[ir.lhs], REGS[ir.rhs]);
@@ -75,10 +77,16 @@ fn gen(func: Function, label: usize) {
             IRType::JMP => {
                 print!("\tjmp .L{}\n", ir.lhs);
             },
-            IRType::LOAD => {
+            IRType::LOAD32 => {
+                print!("\tmov {}, [{}]\n", REGS32[ir.lhs], REGS[ir.rhs]);
+            },
+            IRType::LOAD64 => {
                 print!("\tmov {}, [{}]\n", REGS[ir.lhs], REGS[ir.rhs]);
             },
-            IRType::STORE => {
+            IRType::STORE32 => {
+                print!("\tmov [{}], {}\n", REGS[ir.lhs], REGS32[ir.rhs]);
+            },
+            IRType::STORE64 => {
                 print!("\tmov [{}], {}\n", REGS[ir.lhs], REGS[ir.rhs]);
             },
             IRType::NOP => {},

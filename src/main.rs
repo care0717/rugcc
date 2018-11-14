@@ -11,7 +11,7 @@ mod codegen;
 
 const REGS: [&str; 8] = ["rbp", "r10", "r11", "r9", "r12", "r13", "r14", "r15"];
 const REGS8: [&str; 8] = ["bpl", "r10b", "r11b", "bl", "r12b", "r13b", "r14b", "r15b"];
-
+const REGS32: [&str; 8] = ["ebp", "r10d", "r11d", "ebx", "r12d", "r13d", "r14d", "r15d"];
 
 fn main() {
     let app = App::new("rugcc")

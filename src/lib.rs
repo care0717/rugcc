@@ -21,6 +21,41 @@ pub mod common {
         pub val: String,
     }
 
+
+    #[derive(PartialEq, Debug, Clone)]
+    pub enum TY {
+        INT,
+        PTR,
+        ARY,
+    }
+    #[derive(PartialEq, Debug, Clone)]
+    pub struct Type {
+        pub ty: TY,
+        pub ptr_of: Option<Box<Type>>,
+        pub ary_of: Option<Box<Type>>,
+        pub len: usize,
+    }
+    impl Default for Type {
+        fn default() -> Self {
+            Type{ ty: TY::INT, ptr_of: None, ary_of: None, len: 0}
+        }
+    }
+    impl Type {
+        pub fn size_of(&self) -> usize {
+            match self.ty {
+                TY::INT => return 4,
+                TY::ARY => return self.ary_of.clone().unwrap().size_of() * self.len,
+                TY::PTR => return 8,
+            }
+        }
+        pub fn ary_of(&self, len: usize) -> Type {
+            return Type{ty: TY::ARY, ary_of: Some(Box::new(self.clone())), len, ..Default::default()};
+        }
+        pub fn ptr_of(&self) -> Type {
+            return Type{ty: TY::PTR, ptr_of: Some(Box::new(self.clone())), ..Default::default()};
+        }
+    }
+
     #[derive(PartialEq, Debug, Clone)]
     pub enum ND {
         NUM,
@@ -28,6 +63,7 @@ pub mod common {
         VARDEF,
         LVAR,
         DEREF,     // pointer dereference ("*")
+        ADDR,
         CALL,
         FUNC,
         FOR,
@@ -39,33 +75,6 @@ pub mod common {
         COMP_STMT,
         EXPR_STMT,
     }
-
-    #[derive(PartialEq, Debug, Clone)]
-    pub enum TY {
-        INT,
-        PTR,
-    }
-    #[derive(PartialEq, Debug, Clone)]
-    pub struct Type {
-        pub ty: TY,
-        pub ptr_of: Option<Box<Type>>,
-    }
-    impl Default for Type {
-        fn default() -> Self {
-            Type{ ty: TY::INT, ptr_of: None}
-        }
-    }
-    impl Type {
-        pub fn size_of(&self) -> usize {
-            if self.ty == TY::INT {
-                return 4
-            }
-            assert!(self.ty == TY::PTR);
-            return 8
-        }
-    }
-
-
     #[derive(Debug, PartialEq, Clone)]
     pub struct Node {
         pub op: ND,
@@ -106,6 +115,9 @@ pub mod common {
                 },
             }
         }
+        pub fn addr_of(&self, ty: Type) -> Node {
+            return Node{op: ND::ADDR, ty: ty.ptr_of(), expr: Some(Box::new(self.clone())), ..Default::default()}
+        }
     }
 
     #[derive(PartialEq, Debug, Clone)]
@@ -127,11 +139,14 @@ pub mod common {
         MOV,
         LABEL,
         UNLESS,
-        LOAD,
-        STORE,
+        LOAD32,
+        LOAD64,
+        STORE32,
+        STORE64,
+        STORE32_ARG,
+        STORE64_ARG,
         RETURN,
         CALL,
-        SAVE_ARGS,
         JMP,
         KILL,
         NOP,
@@ -175,7 +190,8 @@ pub mod common {
                 IRInfoType::REG_LABEL => return format!("{} r{}, .L{}", info.name, self.lhs, self.rhs),
                 IRInfoType::NOARG => return format!("{}", info.name),
                 IRInfoType::CALL => return format!("r{} = {}(", self.lhs, self.name),
-                IRInfoType::IMN => return format!("{} {}\n", info.name, self.lhs),
+                IRInfoType::IMM => return format!("{} {}\n", info.name, self.lhs),
+                IRInfoType::IMM_IMM =>return format!("{} {}, {}", info.name, self.lhs, self.rhs),
                 IRInfoType::JMP => return format!("  {} .L{}", info.name, self.lhs),
             }
         }
@@ -190,7 +206,8 @@ pub mod common {
         REG_IMN,
         REG_LABEL,
         CALL,
-        IMN,
+        IMM,
+        IMM_IMM,
         JMP,
     }
 
@@ -201,7 +218,7 @@ pub mod common {
         pub ty: IRInfoType,
     }
 
-    const IRINFO: [IRInfo; 18] = [
+    const IRINFO: [IRInfo; 21] = [
         IRInfo{op: IRType::ADD, name: "ADD", ty: IRInfoType::REG_REG},
         IRInfo{op: IRType::SUB, name: "SUB", ty: IRInfoType::REG_REG},
         IRInfo{op: IRType::MUL, name: "MUL", ty: IRInfoType::REG_REG},
@@ -212,14 +229,17 @@ pub mod common {
         IRInfo{op: IRType::LABEL, name: "", ty: IRInfoType::LABEL},
         IRInfo{op: IRType::UNLESS, name: "UNLESS", ty: IRInfoType::REG_LABEL},
         IRInfo{op: IRType::RETURN, name: "RET", ty: IRInfoType::REG},
-        IRInfo{op: IRType::LOAD, name: "LOAD", ty: IRInfoType::REG_REG},
-        IRInfo{op: IRType::STORE, name: "STORE", ty: IRInfoType::REG_REG},
+        IRInfo{op: IRType::LOAD32, name: "LOAD32", ty: IRInfoType::REG_REG},
+        IRInfo{op: IRType::LOAD64, name: "LOAD64", ty: IRInfoType::REG_REG},
+        IRInfo{op: IRType::STORE32, name: "STORE32", ty: IRInfoType::REG_REG},
+        IRInfo{op: IRType::STORE64, name: "STORE32", ty: IRInfoType::REG_REG},
+        IRInfo{op: IRType::STORE32_ARG, name: "STORE32_ARG", ty: IRInfoType::IMM_IMM},
+        IRInfo{op: IRType::STORE64_ARG, name: "STORE64_ARG", ty: IRInfoType::IMM_IMM},
         IRInfo{op: IRType::LT, name: "LT", ty: IRInfoType::REG_REG},
         IRInfo{op: IRType::KILL, name: "KILL", ty: IRInfoType::NOARG},
         IRInfo{op: IRType::NOP, name: "NOP", ty: IRInfoType::NOARG},
         IRInfo{op: IRType::JMP, name: "JMP", ty: IRInfoType::JMP},
         IRInfo{op: IRType::CALL, name: "CALL", ty: IRInfoType::CALL},
-        IRInfo{op: IRType::SAVE_ARGS, name: "SAVE_ARGS", ty: IRInfoType::IMN},
     ];
 
     pub fn dump_ir(fns: &Vec<Function>) {

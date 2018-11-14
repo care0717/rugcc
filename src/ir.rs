@@ -21,6 +21,9 @@ impl IrGenerator {
     fn label(&mut self, x: usize) { self.add(IRType::LABEL, x, 0); }
 
     fn gen_lval(&mut self, node: Node) -> usize {
+        if node.op == ND::DEREF {
+            return self.gen_expr(*node.expr.unwrap())
+        }
         if node.op != ND::LVAR {
             unreachable!("not an lvalue: {:?} ({})", node.op, node.val);
         }
@@ -40,7 +43,6 @@ impl IrGenerator {
         return r1;
     }
 
-
     fn gen_expr(&mut self, node: Node) -> usize {
         match node.op {
             ND::NUM => {
@@ -50,8 +52,12 @@ impl IrGenerator {
                 return r
             },
             ND::LVAR => {
-                let r = self.gen_lval(node);
-                self.add(IRType::LOAD, r, r);
+                let r = self.gen_lval(node.clone());
+                if node.ty.ty == TY::PTR {
+                    self.add(IRType::LOAD64, r, r);
+                } else {
+                    self.add(IRType::LOAD32, r, r);
+                }
                 return r
             },
             ND::LOGAND => {
@@ -102,15 +108,20 @@ impl IrGenerator {
                 }
                 return r
             },
+            ND::ADDR => return self.gen_lval(*node.expr.unwrap()),
             ND::DEREF => {
                 let r = self.gen_expr(*node.expr.unwrap());
-                self.add(IRType::LOAD, r, r);
+                self.add(IRType::LOAD64, r, r);
                 return r
             },
             ND::OPE('=') => {
                 let rhs = self.gen_expr(*node.rhs.unwrap());
-                let lhs = self.gen_lval(*node.lhs.unwrap());
-                self.add(IRType::STORE, lhs, rhs);
+                let lhs = self.gen_lval(*node.lhs.clone().unwrap());
+                if node.lhs.unwrap().ty.ty == TY::PTR {
+                    self.add(IRType::STORE64, lhs, rhs);
+                } else {
+                    self.add(IRType::STORE32, lhs, rhs);
+                }
                 self.kill(rhs);
                 return lhs
             },
@@ -149,8 +160,11 @@ impl IrGenerator {
                 self.regno += 1;
                 self.add(IRType::MOV, lhs, 0);
                 self.add(IRType::SUB_IMM, lhs, node.offset);
-                self.add(IRType::STORE, lhs, rhs);
-                self.kill(lhs);
+                if node.ty.ty == TY::PTR {
+                    self.add(IRType::STORE64, lhs, rhs);
+                } else {
+                    self.add(IRType::STORE32, lhs, rhs);
+                }                self.kill(lhs);
                 self.kill(rhs);
             },
             ND::IF => {
@@ -216,8 +230,10 @@ impl IrGenerator {
             self.code= Vec::new();
             self.regno = 1;
             let name = node.val.clone();
-            if node.args.len() > 0 {
-                self.add(IRType::SAVE_ARGS, node.args.len(), 0);
+            for i in 0..node.args.len() {
+                let arg = node.args[i].clone();
+                let op = if arg.ty.ty == TY::PTR { IRType::STORE64_ARG } else { IRType::STORE32_ARG };
+                self.add(op, arg.offset, i);
             }
             self.gen_stmt(*node.body.unwrap());
             funcs.push(Function{name, irs: self.code.clone(), stack_size: node.stack_size, ..Default::default()})
@@ -310,8 +326,8 @@ mod tests {
                 op: ND::FUNC,
                 val: "add".to_string(),
                 args: [
-                    Node { op: ND::VARDEF, val: "a".to_string(), offset: 8, ..Default::default() },
-                    Node { op: ND::VARDEF, val: "b".to_string(), offset: 16,..Default::default() }
+                    Node { op: ND::VARDEF, val: "a".to_string(), offset: 4, ..Default::default() },
+                    Node { op: ND::VARDEF, val: "b".to_string(), offset: 8,..Default::default() }
                 ].to_vec(),
                 body: Some(Box::new(Node {
                     op: ND::COMP_STMT,
@@ -320,13 +336,13 @@ mod tests {
                             op: ND::RETURN,
                             expr: Some(Box::new(Node {
                                 op: ND::OPE('+'),
-                                lhs: Some(Box::new(Node { op: ND::LVAR, val: "a".to_string(), offset: 8, ..Default::default() })),
-                                rhs: Some(Box::new(Node { op: ND::LVAR, val: "b".to_string(), offset: 16, ..Default::default() })),
+                                lhs: Some(Box::new(Node { op: ND::LVAR, val: "a".to_string(), offset: 4, ..Default::default() })),
+                                rhs: Some(Box::new(Node { op: ND::LVAR, val: "b".to_string(), offset: 8, ..Default::default() })),
                                 ..Default::default() })),
                             ..Default::default()
                         }].to_vec(),
                     ..Default::default() })),
-                stack_size: 16,
+                stack_size: 8,
                 ..Default::default()
             },
             Node {
@@ -356,18 +372,19 @@ mod tests {
             Function {
                 name: "add".to_string(),
                 irs: [
-                    IR { op: IRType::SAVE_ARGS, lhs: 2, rhs: 0, ..Default::default() },
+                    IR { op: IRType::STORE32_ARG, lhs: 4, rhs: 0, ..Default::default() },
+                    IR { op: IRType::STORE32_ARG, lhs: 8, rhs: 1, ..Default::default() },
                     IR { op: IRType::MOV, lhs: 1, rhs: 0, ..Default::default() },
-                    IR { op: IRType::SUB_IMM, lhs: 1, rhs: 8, ..Default::default() },
-                    IR { op: IRType::LOAD, lhs: 1, rhs: 1, ..Default::default() },
+                    IR { op: IRType::SUB_IMM, lhs: 1, rhs: 4, ..Default::default() },
+                    IR { op: IRType::LOAD32, lhs: 1, rhs: 1, ..Default::default() },
                     IR { op: IRType::MOV, lhs: 2, rhs: 0, ..Default::default() },
-                    IR { op: IRType::SUB_IMM, lhs: 2, rhs: 16, ..Default::default() },
-                    IR { op: IRType::LOAD, lhs: 2, rhs: 2, ..Default::default() },
+                    IR { op: IRType::SUB_IMM, lhs: 2, rhs: 8, ..Default::default() },
+                    IR { op: IRType::LOAD32, lhs: 2, rhs: 2, ..Default::default() },
                     IR { op: IRType::ADD, lhs: 1, rhs: 2, ..Default::default() },
                     IR { op: IRType::KILL, lhs: 2, rhs: 0, ..Default::default() },
                     IR { op: IRType::RETURN, lhs: 1, rhs: 0, ..Default::default() },
                     IR { op: IRType::KILL, lhs: 1, rhs: 0, ..Default::default() }].to_vec(),
-                stack_size: 16 },
+                stack_size: 8 },
             Function {
                 name: "main".to_string(),
                 irs: [

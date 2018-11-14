@@ -22,7 +22,7 @@ impl SemaGenerator {
         return (q, p)
     }
 
-    fn walk(&mut self, mut node: Node) -> Node {
+    fn walk(&mut self, mut node: Node, decay: bool) -> Node {
         match node.op {
             ND::NUM => { return node},
             ND::IDENT => {
@@ -32,34 +32,38 @@ impl SemaGenerator {
                 node.op = ND::LVAR;
                 let var = self.vars.get(&node.val).unwrap().clone();
                 node.offset = var.offset;
-                node.ty = var.ty;
+                if decay && var.ty.ty == TY::ARY {
+                    node = node.addr_of(*var.ty.ary_of.unwrap());
+                } else {
+                    node.ty = var.ty;
+                }
                 return node
             },
             ND::VARDEF => {
-                self.stack_size += 8;
+                self.stack_size += node.ty.size_of();
                 self.vars.insert(node.val.clone(), Var{ty: node.ty.clone(), offset: self.stack_size});
                 node.offset = self.stack_size;
                 if node.init.is_some() {
-                    node.init = Some(Box::new(self.walk(*node.init.unwrap())));
+                    node.init = Some(Box::new(self.walk(*node.init.unwrap(), true)));
                 }
                 return node
             },
             ND::IF => {
-                node.cond = Some(Box::new(self.walk(*node.cond.unwrap())));
-                node.then = Some(Box::new(self.walk(*node.then.unwrap())));
-                if node.els.is_some() { node.els =  Some(Box::new(self.walk(*node.els.unwrap()))); }
+                node.cond = Some(Box::new(self.walk(*node.cond.unwrap(), true)));
+                node.then = Some(Box::new(self.walk(*node.then.unwrap(), true)));
+                if node.els.is_some() { node.els =  Some(Box::new(self.walk(*node.els.unwrap(), true))); }
                 return node
             },
             ND::FOR => {
-                node.init = Some(Box::new(self.walk(*node.init.unwrap())));
-                node.cond = Some(Box::new(self.walk(*node.cond.unwrap())));
-                node.inc = Some(Box::new(self.walk(*node.inc.unwrap())));
-                node.body = Some(Box::new(self.walk(*node.body.unwrap())));
+                node.init = Some(Box::new(self.walk(*node.init.unwrap(), true)));
+                node.cond = Some(Box::new(self.walk(*node.cond.unwrap(), true)));
+                node.inc = Some(Box::new(self.walk(*node.inc.unwrap(), true)));
+                node.body = Some(Box::new(self.walk(*node.body.unwrap(), true)));
                 return node
             },
             ND::OPE('+') | ND::OPE('-') => {
-                node.lhs = Some(Box::new(self.walk(*node.lhs.unwrap())));
-                node.rhs = Some(Box::new(self.walk(*node.rhs.unwrap())));
+                node.lhs = Some(Box::new(self.walk(*node.lhs.unwrap(), true)));
+                node.rhs = Some(Box::new(self.walk(*node.rhs.unwrap(), true)));
                 if node.rhs.clone().unwrap().ty.ty == TY::PTR {
                     let (lhs, rhs) = self.swap(node.lhs, node.rhs);
                     node.lhs = lhs;
@@ -71,14 +75,20 @@ impl SemaGenerator {
                 node.ty = node.lhs.clone().unwrap().ty;
                 return node
             },
+            ND::OPE('=') => {
+                node.lhs = Some(Box::new(self.walk(*node.lhs.unwrap(), false)));
+                node.rhs = Some(Box::new(self.walk(*node.rhs.unwrap(), true)));
+                node.ty = node.lhs.clone().unwrap().ty;
+                return node
+            },
             ND::OPE(_) | ND::LOGAND | ND::LOGOR => {
-                node.lhs = Some(Box::new(self.walk(*node.lhs.unwrap())));
-                node.rhs = Some(Box::new(self.walk(*node.rhs.unwrap())));
+                node.lhs = Some(Box::new(self.walk(*node.lhs.unwrap(), true)));
+                node.rhs = Some(Box::new(self.walk(*node.rhs.unwrap(), true)));
                 node.ty = node.lhs.clone().unwrap().ty;
                 return node
             },
             ND::DEREF => {
-                node.expr = Some(Box::new(self.walk(*node.expr.unwrap())));
+                node.expr = Some(Box::new(self.walk(*node.expr.unwrap(), true)));
                 if node.expr.clone().unwrap().ty.ty != TY::PTR {
                     unreachable!("operand must be a pointer");
                 }
@@ -86,34 +96,34 @@ impl SemaGenerator {
                 return node
             },
             ND::RETURN => {
-                node.expr = Some(Box::new(self.walk(*node.expr.unwrap())));
+                node.expr = Some(Box::new(self.walk(*node.expr.unwrap(), true)));
                 return node
             },
             ND::CALL => {
                 for i in 0..node.args.len() {
-                    node.args[i] = self.walk(node.args[i].clone());
+                    node.args[i] = self.walk(node.args[i].clone(), true);
                 }
                 node.ty = Type{..Default::default()};
                 return node
             },
             ND::FUNC => {
                 for i in 0..node.args.len() {
-                    node.args[i] = self.walk(node.args[i].clone());
+                    node.args[i] = self.walk(node.args[i].clone(), true);
                 }
-                node.body = Some(Box::new(self.walk(*node.body.unwrap())));
+                node.body = Some(Box::new(self.walk(*node.body.unwrap(), true)));
                 return node
             },
             ND::COMP_STMT => {
                 for i in 0..node.stmts.len() {
-                    node.stmts[i] = self.walk(node.stmts[i].clone());
+                    node.stmts[i] = self.walk(node.stmts[i].clone(), true);
                 }
                 return node
             },
             ND::EXPR_STMT => {
-                node.expr = Some(Box::new(self.walk(*node.expr.unwrap())));
+                node.expr = Some(Box::new(self.walk(*node.expr.unwrap(), true)));
                 return node
             },
-            ND::LVAR => {unreachable!("unexpected type: LVAR");}
+            ND::LVAR | ND::ADDR => {unreachable!("unexpected type: LVAR");}
         }
     }
     pub fn sema(&mut self, nodes: Vec<Node>)  -> Vec<Node>{
@@ -122,7 +132,7 @@ impl SemaGenerator {
             assert!(node.op == ND::FUNC);
             self.vars = HashMap::new();
             self.stack_size = 0;
-            node = self.walk(node);
+            node = self.walk(node, true);
             node.stack_size = self.stack_size;
             res.push(node);
         }
@@ -280,8 +290,8 @@ mod tests {
                 op: ND::FUNC,
                 val: "add".to_string(),
                 args: [
-                    Node { op: ND::VARDEF, val: "a".to_string(), offset: 8, ..Default::default() },
-                    Node { op: ND::VARDEF, val: "b".to_string(), offset: 16,..Default::default() }
+                    Node { op: ND::VARDEF, val: "a".to_string(), offset: 4, ..Default::default() },
+                    Node { op: ND::VARDEF, val: "b".to_string(), offset: 8,..Default::default() }
                 ].to_vec(),
                 body: Some(Box::new(Node {
                     op: ND::COMP_STMT,
@@ -290,13 +300,13 @@ mod tests {
                             op: ND::RETURN,
                             expr: Some(Box::new(Node {
                                 op: ND::OPE('+'),
-                                lhs: Some(Box::new(Node { op: ND::LVAR, val: "a".to_string(), offset: 8, ..Default::default() })),
-                                rhs: Some(Box::new(Node { op: ND::LVAR, val: "b".to_string(), offset: 16, ..Default::default() })),
+                                lhs: Some(Box::new(Node { op: ND::LVAR, val: "a".to_string(), offset: 4, ..Default::default() })),
+                                rhs: Some(Box::new(Node { op: ND::LVAR, val: "b".to_string(), offset: 8, ..Default::default() })),
                                 ..Default::default() })),
                             ..Default::default()
                         }].to_vec(),
                     ..Default::default() })),
-                stack_size: 16,
+                stack_size: 8,
                 ..Default::default()
             },
             Node {

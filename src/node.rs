@@ -1,11 +1,7 @@
 extern crate rugcc;
-use self::rugcc::common::{TK, Token, ND,  Node, TY, Type};
+use self::rugcc::common::{TK, Token, ND,  Node, Type};
 
 use std;
-
-fn ptr_of(base: Type) -> Type {
-    return Type{ty: TY::PTR, ptr_of: Some(Box::new(base))}
-}
 
 fn new_node(ty: ND, lhs: Node, rhs: Node) -> Node {
     return Node{ op: ty, lhs: Some(Box::new(lhs)), rhs: Some(Box::new(rhs)), ..Default::default()};
@@ -210,17 +206,31 @@ fn get_type(tokens: &mut Vec<Token>) -> Type {
     }
     let mut ty = Type{..Default::default()};
     while consume(TK::OPE('*'), tokens) {
-        ty = ptr_of(ty);
+        ty = ty.ptr_of();
     }
     return ty
 }
 
 fn decl(tokens: &mut Vec<Token>) -> Node {
+    // Read the first half of type name (e.g. `int *`).
     let mut node = Node { op: ND::VARDEF, ty: get_type(tokens), ..Default::default()};
+    // Read an identifier.
     let token = tokens.pop().unwrap();
-    if token.ty != TK::IDENT { unreachable!("variable name expected, but got {}", token.val);}
+    if token.ty != TK::IDENT { unreachable!("variable name expected, but got {}", token.val)}
     node.val = token.val;
+    // Read the second half of type name (e.g. `[3][5]`).
+    let mut ary_size = Vec::new();
+    while consume(TK::OPE('['), tokens) {
+        let len = term(tokens);
+        if len.op != ND::NUM {unreachable!("number expected")}
+        ary_size.push(len);
+        expect(TK::OPE(']'), tokens);
+    }
+    for len in ary_size {
+        node.ty = node.ty.ary_of(len.val.parse().unwrap());
+    }
 
+    // Read an initializer.
     if consume(TK::OPE('='), tokens) {node.init = Some(Box::new(assign(tokens)));}
     expect(TK::END_LINE, tokens);
 
