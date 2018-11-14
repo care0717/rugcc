@@ -7,13 +7,8 @@ static ARGREG: [&str; 6] = ["rdi", "rsi", "rdx", "rcx", "r8", "r9"];
 
 fn gen(func: Function, label: usize) {
     let ret = format!(".Lend{}", label);
-    if func.name == "main" {
-        print!(".global _{}\n", func.name);
-        print!("_{}:\n", func.name);
-    } else {
-        print!(".global {}\n", func.name);
-        print!("{}:\n", func.name);
-    }
+    print!(".global _{}\n", func.name);
+    print!("_{}:\n", func.name);
     print!("\tpush rbp\n");
     print!("\tmov rbp, rsp\n");
     print!("\tsub rsp, {}\n", func.stack_size);
@@ -62,7 +57,7 @@ fn gen(func: Function, label: usize) {
                 print!("\tpush r10\n");
                 print!("\tpush r11\n");
                 print!("\tmov rax, 0\n");
-                print!("\tcall {}\n", ir.name);
+                print!("\tcall _{}\n", ir.name);
                 print!("\tpop r11\n");
                 print!("\tpop r10\n");
                 print!("\tmov {}, rax\n", REGS[ir.lhs]);

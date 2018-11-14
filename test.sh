@@ -43,7 +43,7 @@ runtest 'int main() { if (0) return 1+2; return 3*(1+3); }' 12
 runtest 'int main() { int a=1; if (a) a=2; else a=3; return a; }' 2
 runtest 'int main() { int a=0; if (a) a=2; else a=3; return a; }' 3
 
-runtest 'int main() { return _plus(2, 3); }' 5
+runtest 'int main() { return plus(2, 3); }' 5
 runtest 'int one() { return 1; } int main() { return one(); }' 1
 runtest 'int one() { return 1; } int two() { return 2; } int main() { return one()+two(); }' 3
 
@@ -70,6 +70,6 @@ runtest 'int main() { return 1>0; }' 1
 runtest 'int main() { int sum=0; for (int i=10; i<15; i=i+1) sum = sum + i; return sum;}' 60
 runtest 'int main() { int i=1; int j=1; int k; int m; for (k=0; k<10; k=k+1) { m=i+j; i=j; j=m; } return i;}' 89
 
-runtest 'int main() { int *p = _alloc(42); return *p; }' 42
+runtest 'int main() { int *p = alloc(42); return *p; }' 42
 
 echo "OK"
