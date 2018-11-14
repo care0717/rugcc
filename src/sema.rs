@@ -1,5 +1,5 @@
 extern crate rugcc;
-use self::rugcc::common::{ND,  Node, Type};
+use self::rugcc::common::{ND,  Node, Type, TY};
 use std::collections::HashMap;
 
 #[derive(PartialEq, Debug, Clone)]
@@ -17,6 +17,11 @@ impl SemaGenerator {
     pub fn new() -> SemaGenerator {
         SemaGenerator{vars: HashMap::new(), stack_size: 0}
     }
+
+    fn swap(&self, p: Option<Box<Node>>, q: Option<Box<Node>>) -> (Option<Box<Node>>, Option<Box<Node>>){
+        return (q, p)
+    }
+
     fn walk(&mut self, mut node: Node) -> Node {
         match node.op {
             ND::NUM => { return node},
@@ -52,13 +57,35 @@ impl SemaGenerator {
                 node.body = Some(Box::new(self.walk(*node.body.unwrap())));
                 return node
             },
+            ND::OPE('+') | ND::OPE('-') => {
+                node.lhs = Some(Box::new(self.walk(*node.lhs.unwrap())));
+                node.rhs = Some(Box::new(self.walk(*node.rhs.unwrap())));
+                if node.rhs.clone().unwrap().ty.ty == TY::PTR {
+                    let (lhs, rhs) = self.swap(node.lhs, node.rhs);
+                    node.lhs = lhs;
+                    node.rhs = rhs;
+                }
+                if node.rhs.clone().unwrap().ty.ty == TY::PTR {
+                    unreachable!("'pointer {:?} pointer' is not defined", node.op);
+                }
+                node.ty = node.lhs.clone().unwrap().ty;
+                return node
+            },
             ND::OPE(_) | ND::LOGAND | ND::LOGOR => {
                 node.lhs = Some(Box::new(self.walk(*node.lhs.unwrap())));
                 node.rhs = Some(Box::new(self.walk(*node.rhs.unwrap())));
                 node.ty = node.lhs.clone().unwrap().ty;
                 return node
             },
-            ND::RETURN | ND::DEREF => {
+            ND::DEREF => {
+                node.expr = Some(Box::new(self.walk(*node.expr.unwrap())));
+                if node.expr.clone().unwrap().ty.ty != TY::PTR {
+                    unreachable!("operand must be a pointer");
+                }
+                node.ty = *node.expr.clone().unwrap().ty.ptr_of.unwrap();
+                return node
+            },
+            ND::RETURN => {
                 node.expr = Some(Box::new(self.walk(*node.expr.unwrap())));
                 return node
             },

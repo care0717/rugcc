@@ -4,10 +4,26 @@ runtest() {
     ./target/debug/rugcc "$1" > ./tmp.s
     cat <<EOF | gcc -xc -c -o tmp-test.o -
         int plus(int x, int y) { return x + y; }
-        int *alloc(int x) {
-            static int arr[1];
-            arr[0] = x;
-            return arr;
+        int *alloc1(int x, int y) {
+          static int arr[2];
+          arr[0] = x;
+          arr[1] = y;
+          return arr;
+        }
+        int *alloc2(int x, int y) {
+          static int arr[2];
+          arr[0] = x;
+          arr[1] = y;
+          return arr + 1;
+        }
+        int **alloc_ptr_ptr(int x) {
+          static int **p;
+          static int *q;
+          static int r;
+          r = x;
+          q = &r;
+          p = &q;
+          return p;
         }
 EOF
     cc -o ./tmp.exe ./tmp.s ./tmp-test.o
@@ -70,6 +86,8 @@ runtest 'int main() { return 1>0; }' 1
 runtest 'int main() { int sum=0; for (int i=10; i<15; i=i+1) sum = sum + i; return sum;}' 60
 runtest 'int main() { int i=1; int j=1; int k; int m; for (k=0; k<10; k=k+1) { m=i+j; i=j; j=m; } return i;}' 89
 
-runtest 'int main() { int *p = alloc(42); return *p; }' 42
+runtest 'int main() { int *p = alloc1(3,5); return *p + *(1 + p); }' 8
+runtest 'int main() { int *p = alloc2(2,7); return *p + *(p - 1); }' 9
+runtest 'int main() { int **p = alloc_ptr_ptr(2); return **p; }' 2
 
 echo "OK"

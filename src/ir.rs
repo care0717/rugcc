@@ -1,5 +1,5 @@
 extern crate rugcc;
-use self::rugcc::common::{IR, ND, Node, IRType, Function};
+use self::rugcc::common::{IR, ND, Node, IRType, Function, TY};
 
 pub struct IrGenerator {
     code: Vec<IR>,
@@ -117,18 +117,24 @@ impl IrGenerator {
             ND::OPE('<') => {
                 return self.gen_binop(IRType::LT, *node.lhs.unwrap(), *node.rhs.unwrap())
             },
-            ND::OPE('+') =>{
-                return self.gen_binop(IRType::ADD, *node.lhs.unwrap(), *node.rhs.unwrap())
+            ND::OPE('+') | ND::OPE('-') =>{
+                let insn = if node.op == ND::OPE('+') { IRType::ADD } else { IRType::SUB };
+                if node.lhs.clone().unwrap().ty.ty != TY::PTR {
+                    return self.gen_binop(insn, *node.lhs.unwrap(), *node.rhs.unwrap())
+                }
+                let rhs = self.gen_expr(*node.rhs.unwrap());
+                let r = self.regno;
+                self.regno += 1;
+                self.add(IRType::IMM, r, node.lhs.clone().unwrap().ty.ptr_of.unwrap().size_of());
+                self.add(IRType::MUL, rhs, r);
+                self.kill(r);
+                let lhs = self.gen_expr(*node.lhs.unwrap());
+                self.add(insn, lhs, rhs);
+                self.kill(rhs);
+                return lhs
             },
-            ND::OPE('-') =>{
-                return self.gen_binop(IRType::SUB, *node.lhs.unwrap(), *node.rhs.unwrap())
-            },
-            ND::OPE('*') =>{
-                return self.gen_binop(IRType::MUL, *node.lhs.unwrap(), *node.rhs.unwrap())
-            },
-            ND::OPE('/') =>{
-                return self.gen_binop(IRType::DIV, *node.lhs.unwrap(), *node.rhs.unwrap())
-            },
+            ND::OPE('*') => return self.gen_binop(IRType::MUL, *node.lhs.unwrap(), *node.rhs.unwrap()),
+            ND::OPE('/') => return self.gen_binop(IRType::DIV, *node.lhs.unwrap(), *node.rhs.unwrap()),
             _ => { unreachable!("unexpected node type:{:?}", node.op)}
         }
     }

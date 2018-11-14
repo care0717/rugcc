@@ -55,6 +55,15 @@ pub mod common {
             Type{ ty: TY::INT, ptr_of: None}
         }
     }
+    impl Type {
+        pub fn size_of(&self) -> usize {
+            if self.ty == TY::INT {
+                return 4
+            }
+            assert!(self.ty == TY::PTR);
+            return 8
+        }
+    }
 
 
     #[derive(Debug, PartialEq, Clone)]
