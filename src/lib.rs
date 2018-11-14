@@ -127,7 +127,10 @@ pub mod common {
         KILL,
         NOP,
         LT,
-        Ope(char),
+        ADD,
+        SUB,
+        MUL,
+        DIV,
     }
 
     #[derive(Clone, Debug, PartialEq)]
@@ -190,10 +193,10 @@ pub mod common {
     }
 
     const IRINFO: [IRInfo; 18] = [
-        IRInfo{op: IRType::Ope('+'), name: "ADD", ty: IRInfoType::REG_REG},
-        IRInfo{op: IRType::Ope('-'), name: "SUB", ty: IRInfoType::REG_REG},
-        IRInfo{op: IRType::Ope('*'), name: "MUL", ty: IRInfoType::REG_REG},
-        IRInfo{op: IRType::Ope('/'), name: "DIV", ty: IRInfoType::REG_REG},
+        IRInfo{op: IRType::ADD, name: "ADD", ty: IRInfoType::REG_REG},
+        IRInfo{op: IRType::SUB, name: "SUB", ty: IRInfoType::REG_REG},
+        IRInfo{op: IRType::MUL, name: "MUL", ty: IRInfoType::REG_REG},
+        IRInfo{op: IRType::DIV, name: "DIV", ty: IRInfoType::REG_REG},
         IRInfo{op: IRType::IMM, name: "MOV", ty: IRInfoType::REG_IMN},
         IRInfo{op: IRType::SUB_IMM, name: "SUB", ty: IRInfoType::REG_IMN},
         IRInfo{op: IRType::MOV, name: "MOV", ty: IRInfoType::REG_REG},

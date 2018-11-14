@@ -117,8 +117,17 @@ impl IrGenerator {
             ND::OPE('<') => {
                 return self.gen_binop(IRType::LT, *node.lhs.unwrap(), *node.rhs.unwrap())
             },
-            ND::OPE(o) =>{
-                return self.gen_binop(IRType::Ope(o), *node.lhs.unwrap(), *node.rhs.unwrap())
+            ND::OPE('+') =>{
+                return self.gen_binop(IRType::ADD, *node.lhs.unwrap(), *node.rhs.unwrap())
+            },
+            ND::OPE('-') =>{
+                return self.gen_binop(IRType::SUB, *node.lhs.unwrap(), *node.rhs.unwrap())
+            },
+            ND::OPE('*') =>{
+                return self.gen_binop(IRType::MUL, *node.lhs.unwrap(), *node.rhs.unwrap())
+            },
+            ND::OPE('/') =>{
+                return self.gen_binop(IRType::DIV, *node.lhs.unwrap(), *node.rhs.unwrap())
             },
             _ => { unreachable!("unexpected node type:{:?}", node.op)}
         }
@@ -268,15 +277,15 @@ mod tests {
                     IR { op: IRType::IMM, lhs: 1, rhs: 2, ..Default::default()},
                     IR { op: IRType::IMM, lhs: 2, rhs: 2, ..Default::default() },
                     IR { op: IRType::IMM, lhs: 3, rhs: 3, ..Default::default() },
-                    IR { op: IRType::Ope('*'), lhs: 2, rhs: 3, ..Default::default() },
+                    IR { op: IRType::MUL, lhs: 2, rhs: 3, ..Default::default() },
                     IR { op: IRType::KILL, lhs: 3, ..Default::default() },
-                    IR { op: IRType::Ope('+'), lhs: 1, rhs: 2, ..Default::default() },
+                    IR { op: IRType::ADD, lhs: 1, rhs: 2, ..Default::default() },
                     IR { op: IRType::KILL, lhs: 2, ..Default::default() },
                     IR { op: IRType::IMM, lhs: 4, rhs: 2, ..Default::default() },
-                    IR { op: IRType::Ope('/'), lhs: 1, rhs: 4, ..Default::default() },
+                    IR { op: IRType::DIV, lhs: 1, rhs: 4, ..Default::default() },
                     IR { op: IRType::KILL, lhs: 4, ..Default::default() },
                     IR { op: IRType::IMM, lhs: 5, rhs: 1, ..Default::default() },
-                    IR { op: IRType::Ope('-'), lhs: 1, rhs: 5, ..Default::default() },
+                    IR { op: IRType::SUB, lhs: 1, rhs: 5, ..Default::default() },
                     IR { op: IRType::KILL, lhs: 5, ..Default::default() },
                     IR { op: IRType::RETURN, lhs: 1, ..Default::default() },
                     IR { op: IRType::KILL, lhs: 1, ..Default::default() }].to_vec(),
@@ -348,7 +357,7 @@ mod tests {
                     IR { op: IRType::MOV, lhs: 2, rhs: 0, ..Default::default() },
                     IR { op: IRType::SUB_IMM, lhs: 2, rhs: 16, ..Default::default() },
                     IR { op: IRType::LOAD, lhs: 2, rhs: 2, ..Default::default() },
-                    IR { op: IRType::Ope('+'), lhs: 1, rhs: 2, ..Default::default() },
+                    IR { op: IRType::ADD, lhs: 1, rhs: 2, ..Default::default() },
                     IR { op: IRType::KILL, lhs: 2, rhs: 0, ..Default::default() },
                     IR { op: IRType::RETURN, lhs: 1, rhs: 0, ..Default::default() },
                     IR { op: IRType::KILL, lhs: 1, rhs: 0, ..Default::default() }].to_vec(),

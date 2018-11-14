@@ -32,23 +32,18 @@ fn gen(func: Function, label: usize) {
                 print!("\tmov rax, {}\n", REGS[ir.lhs]);
                 print!("\tjmp {}\n", ret);
             },
-            IRType::Ope(o) => {
-                match o {
-                    '+' => print!("\tadd {}, {}\n", REGS[ir.lhs], REGS[ir.rhs]),
-                    '-' => print!("\tsub {}, {}\n", REGS[ir.lhs], REGS[ir.rhs]),
-                    '*' => {
-                        print!("\tmov rax, {}\n", REGS[ir.rhs]);
-                        print!("\tmul {}\n", REGS[ir.lhs]);
-                        print!("\tmov {}, rax\n", REGS[ir.lhs]);
-                    }
-                    '/' => {
-                        print!("\tmov rax, {}\n", REGS[ir.lhs]);
-                        print!("\tcqo\n");
-                        print!("\tdiv {}\n", REGS[ir.rhs]);
-                        print!("\tmov {}, rax\n", REGS[ir.lhs]);
-                    }
-                    _ => unreachable!("unexpected IR Ope {}", o),
-                }
+            IRType::ADD => print!("\tadd {}, {}\n", REGS[ir.lhs], REGS[ir.rhs]),
+            IRType::SUB => print!("\tsub {}, {}\n", REGS[ir.lhs], REGS[ir.rhs]),
+            IRType::MUL => {
+                print!("\tmov rax, {}\n", REGS[ir.rhs]);
+                print!("\tmul {}\n", REGS[ir.lhs]);
+                print!("\tmov {}, rax\n", REGS[ir.lhs]);
+            },
+            IRType::DIV => {
+                print!("\tmov rax, {}\n", REGS[ir.lhs]);
+                print!("\tcqo\n");
+                print!("\tdiv {}\n", REGS[ir.rhs]);
+                print!("\tmov {}, rax\n", REGS[ir.lhs]);
             },
             IRType::CALL => {
                 for i in 0..ir.args.clone().len(){
