@@ -13,7 +13,7 @@ pub fn tokenize(s: Vec<char>) -> Vec<Token>{
             counter += 1;
             continue;
         }
-        let opes: Vec<char> = "+-*/=(),{}&|<>[]".chars().collect();
+        let opes: Vec<char> = "+-*/=(),{}&|<>[]&".chars().collect();
         if opes.contains(&c) {
             if c=='&' {
                 counter += 1;
@@ -22,8 +22,8 @@ pub fn tokenize(s: Vec<char>) -> Vec<Token>{
                     counter += 1;
                     continue;
                 } else {
-                    print!("cannot tokenize: {}\n", c);
-                    process::exit(1);
+                    tokens.push(Token{ty: TK::OPE(c), val: c.to_string()});
+                    continue;
                 }
             } else if c=='|' {
                 counter += 1;

@@ -87,6 +87,11 @@ impl SemaGenerator {
                 node.ty = node.lhs.clone().unwrap().ty;
                 return node
             },
+            ND::ADDR => {
+                node.expr = Some(Box::new(self.walk(*node.expr.unwrap(), true)));
+                node.ty = node.expr.clone().unwrap().ty.ptr_of();
+                return node
+            },
             ND::DEREF => {
                 node.expr = Some(Box::new(self.walk(*node.expr.unwrap(), true)));
                 if node.expr.clone().unwrap().ty.ty != TY::PTR {
@@ -123,7 +128,7 @@ impl SemaGenerator {
                 node.expr = Some(Box::new(self.walk(*node.expr.unwrap(), true)));
                 return node
             },
-            ND::LVAR | ND::ADDR => {unreachable!("unexpected type: LVAR");}
+            ND::LVAR => {unreachable!("unexpected type: LVAR");}
         }
     }
     pub fn sema(&mut self, nodes: Vec<Node>)  -> Vec<Node>{

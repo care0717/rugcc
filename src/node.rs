@@ -70,8 +70,11 @@ fn term(tokens: &mut Vec<Token>) -> Node {
 fn unary(tokens: &mut Vec<Token>) -> Node {
     if consume(TK::OPE('*'), tokens) {
         return Node{op: ND::DEREF, expr: Some(Box::new(mul(tokens))), ..Default::default()}
+    } else if consume(TK::OPE('&'), tokens) {
+        return Node{op: ND::ADDR, expr: Some(Box::new(mul(tokens))), ..Default::default()}
+    } else {
+        return term(tokens)
     }
-    return term(tokens)
 }
 
 fn mul(tokens: &mut Vec<Token>) -> Node {
