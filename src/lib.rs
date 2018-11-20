@@ -6,6 +6,7 @@ pub mod common {
         EOF,
         RETURN,
         IDENT,
+        SIZEOF,
         INT,
         IF,
         ELSE,
@@ -64,6 +65,7 @@ pub mod common {
         LVAR,
         DEREF,     // pointer dereference ("*")
         ADDR,
+        SIZEOF,
         CALL,
         FUNC,
         FOR,
@@ -247,6 +249,43 @@ pub mod common {
             eprintln!("{}():", f.clone().name);
             for ir in f.clone().irs {
                 eprintln!("{}", ir.tostr());
+            }
+        }
+    }
+    pub fn dump_nodes(nodes: &Vec<Node>) {
+        let space = "  ";
+        for n in nodes {
+            let strs: Vec<char> = format!("{:?}", n).chars().collect();
+            let mut size = 0;
+            let mut result = Vec::new();
+            let mut temp = String::new();
+            for s in strs {
+                temp = [temp, s.to_string()].concat();
+                if s == '{' {
+                    let length =  temp.len();
+                    if temp.find("None").is_none() && temp.find("[]").is_none()  {
+                        result.push(temp);
+                    }
+                    temp = String::new();
+                    size += 1;
+                    for _i in 0..size {
+                        temp = [temp, space.to_string()].concat();
+                    }
+                } else if  s == '}' {
+                    size -= 1;
+                } else if  s == ',' {
+                    let length =  temp.len();
+                    if temp.find("None").is_none() && temp.find("[]").is_none() {
+                        result.push(temp);
+                    }
+                    temp = String::new();
+                    for _i in 0..size {
+                        temp = [temp, space.to_string()].concat();
+                    }
+                }
+            }
+            for r in result {
+                eprintln!("{}", r);
             }
         }
     }

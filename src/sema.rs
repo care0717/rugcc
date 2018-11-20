@@ -104,6 +104,10 @@ impl SemaGenerator {
                 node.expr = Some(Box::new(self.walk(*node.expr.unwrap(), true)));
                 return node
             },
+            ND::SIZEOF => {
+                let expr = self.walk(*node.expr.unwrap(), false);
+                return Node{op: ND::NUM, ty:Type{..Default::default()}, val: expr.ty.size_of().to_string(), ..Default::default()}
+            },
             ND::CALL => {
                 for i in 0..node.args.len() {
                     node.args[i] = self.walk(node.args[i].clone(), true);

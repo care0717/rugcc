@@ -1,5 +1,5 @@
 extern crate rugcc;
-use self::rugcc::common::{TK, Token, ND,  Node, Type, TY};
+use self::rugcc::common::{TK, Token, ND,  Node, Type};
 
 use std;
 
@@ -72,6 +72,8 @@ fn unary(tokens: &mut Vec<Token>) -> Node {
         return Node{op: ND::DEREF, expr: Some(Box::new(mul(tokens))), ..Default::default()}
     } else if consume(TK::OPE('&'), tokens) {
         return Node{op: ND::ADDR, expr: Some(Box::new(mul(tokens))), ..Default::default()}
+    } else if consume(TK::SIZEOF, tokens) {
+        return Node{op: ND::SIZEOF, expr: Some(Box::new(unary(tokens))), ..Default::default()}
     } else {
         return term(tokens)
     }
@@ -359,6 +361,7 @@ pub fn parse(tokens: &mut Vec<Token>) -> Vec<Node> {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use self::rugcc::common::{TY};
     # [test]
     fn can_parse_arithmetic_expr() {
         let input = [

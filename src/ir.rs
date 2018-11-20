@@ -1,5 +1,5 @@
 extern crate rugcc;
-use self::rugcc::common::{IR, ND, Node, IRType, Function, TY, Type};
+use self::rugcc::common::{IR, ND, Node, IRType, Function, TY};
 
 pub struct IrGenerator {
     code: Vec<IR>,
@@ -246,6 +246,7 @@ impl IrGenerator {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use self::rugcc::common::{Type};
     # [test]
     fn can_gen_ir_arithmetic_expr() {
         let input = [

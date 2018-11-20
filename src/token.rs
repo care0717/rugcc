@@ -60,6 +60,7 @@ pub fn tokenize(s: Vec<char>) -> Vec<Token>{
                 "else" => tokens.push(Token{ty: TK::ELSE, val: name.iter().collect()}),
                 "for" => tokens.push(Token{ty: TK::FOR, val: name.iter().collect()}),
                 "int" => tokens.push(Token{ty: TK::INT, val: name.iter().collect()}),
+                "sizeof" => tokens.push(Token{ty: TK::SIZEOF, val: name.iter().collect()}),
                 _ => tokens.push(Token{ty: TK::IDENT, val: name.iter().collect()}),
             }
             continue;
