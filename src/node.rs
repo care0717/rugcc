@@ -1,8 +1,6 @@
 extern crate rugcc;
 use self::rugcc::common::{TK, Token, ND,  Node, Type};
 
-use std;
-
 fn new_node(op: ND, lhs: Node, rhs: Node) -> Node {
     return Node{ op, lhs: Some(Box::new(lhs)), rhs: Some(Box::new(rhs)), ..Default::default()};
 }
@@ -10,8 +8,7 @@ fn new_node(op: ND, lhs: Node, rhs: Node) -> Node {
 fn expect(ty: TK, tokens: &mut Vec<Token>) {
     let token = tokens.pop();
     if token.is_some() && token.unwrap().ty != ty {
-        println!("{:?} expected, but not", ty);
-        std::process::exit(1);
+        unreachable!("{:?} expected, but not", ty);
     }
     return
 }
@@ -35,7 +32,7 @@ fn is_typename(tokens: &Vec<Token>) -> bool {
     return tokens[tokens.len()-1].ty==TK::INT
 }
 
-fn term(tokens: &mut Vec<Token>) -> Node {
+fn primary(tokens: &mut Vec<Token>) -> Node {
     let token = tokens.pop().unwrap();
 
     match token.ty {
@@ -67,6 +64,15 @@ fn term(tokens: &mut Vec<Token>) -> Node {
     }
 }
 
+fn postfix(tokens: &mut Vec<Token>) -> Node {
+    let mut lhs = primary(tokens);
+    while consume(TK::OPE('['), tokens) {
+        lhs = Node {op: ND::DEREF, expr: Some(Box::new(new_node(ND::OPE('+'), lhs, primary(tokens)))), ..Default::default() };
+        expect(TK::OPE(']'), tokens);
+    }
+    return lhs
+}
+
 fn unary(tokens: &mut Vec<Token>) -> Node {
     if consume(TK::OPE('*'), tokens) {
         return Node{op: ND::DEREF, expr: Some(Box::new(mul(tokens))), ..Default::default()}
@@ -75,7 +81,7 @@ fn unary(tokens: &mut Vec<Token>) -> Node {
     } else if consume(TK::SIZEOF, tokens) {
         return Node{op: ND::SIZEOF, expr: Some(Box::new(unary(tokens))), ..Default::default()}
     } else {
-        return term(tokens)
+        return postfix(tokens)
     }
 }
 
@@ -216,6 +222,20 @@ fn get_type(tokens: &mut Vec<Token>) -> Type {
     return ty
 }
 
+fn read_array(mut ty: Type, tokens: &mut Vec<Token>) -> Type {
+    let mut ary_size: Vec<Node> = Vec::new();
+    while consume(TK::OPE('['), tokens) {
+        let len = primary(tokens);
+        if len.op != ND::NUM {unreachable!("number expected")}
+        ary_size.push(len);
+        expect(TK::OPE(']'), tokens);
+    }
+    for len in ary_size {
+        ty = ty.ary_of(len.val.parse().unwrap());
+    }
+    return ty
+}
+
 fn decl(tokens: &mut Vec<Token>) -> Node {
     // Read the first half of type name (e.g. `int *`).
     let mut node = Node { op: ND::VARDEF, ty: get_type(tokens), ..Default::default()};
@@ -224,17 +244,7 @@ fn decl(tokens: &mut Vec<Token>) -> Node {
     if token.ty != TK::IDENT { unreachable!("variable name expected, but got {}", token.val)}
     node.val = token.val;
     // Read the second half of type name (e.g. `[3][5]`).
-    let mut ary_size = Vec::new();
-    while consume(TK::OPE('['), tokens) {
-        let len = term(tokens);
-        if len.op != ND::NUM {unreachable!("number expected")}
-        ary_size.push(len);
-        expect(TK::OPE(']'), tokens);
-    }
-    for len in ary_size {
-        node.ty = node.ty.ary_of(len.val.parse().unwrap());
-    }
-
+    node.ty = read_array(node.ty.clone(), tokens);
     // Read an initializer.
     if consume(TK::OPE('='), tokens) {node.init = Some(Box::new(assign(tokens)));}
     expect(TK::END_LINE, tokens);

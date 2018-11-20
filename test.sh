@@ -90,7 +90,8 @@ runtest 'int main() { int *p = alloc1(3,5); return *p + *(1 + p); }' 8
 runtest 'int main() { int *p = alloc2(2,7); return *p + *(p - 1); }' 9
 runtest 'int main() { int **p = alloc_ptr_ptr(2); return **p; }' 2
 runtest 'int main() { int ary[3]; *ary=2; *(ary+1)=4; *(ary+2)=6; return *ary + *(ary+1) + *(ary+2);}' 12
-runtest 'int main() { int x; int *p = &x; x = 5; return *p;}' 5
+runtest 'int main() { int x; int *p = &x; x = 5; return *p+p[0];}' 10
+runtest 'int main() { int ary[2]; ary[0]=1; ary[1]=2; return ary[0] + ary[1];}' 3
 
 runtest 'int main() { int x; return sizeof(x);}' 4
 runtest 'int main() { int *x; return sizeof x;}' 8
