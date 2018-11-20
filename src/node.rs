@@ -1,8 +1,12 @@
 extern crate rugcc;
 use self::rugcc::common::{TK, Token, ND,  Node, Type};
 
-fn new_node(op: ND, lhs: Node, rhs: Node) -> Node {
+fn new_binop(op: ND, lhs: Node, rhs: Node) -> Node {
     return Node{ op, lhs: Some(Box::new(lhs)), rhs: Some(Box::new(rhs)), ..Default::default()};
+}
+
+fn new_expr(op: ND, expr: Node) -> Node {
+    return  Node{op, expr: Some(Box::new(expr)), ..Default::default()}
 }
 
 fn expect(ty: TK, tokens: &mut Vec<Token>) {
@@ -67,7 +71,7 @@ fn primary(tokens: &mut Vec<Token>) -> Node {
 fn postfix(tokens: &mut Vec<Token>) -> Node {
     let mut lhs = primary(tokens);
     while consume(TK::OPE('['), tokens) {
-        lhs = Node {op: ND::DEREF, expr: Some(Box::new(new_node(ND::OPE('+'), lhs, primary(tokens)))), ..Default::default() };
+        lhs = new_expr(ND::DEREF, new_binop(ND::OPE('+'), lhs, primary(tokens)));
         expect(TK::OPE(']'), tokens);
     }
     return lhs
@@ -75,11 +79,11 @@ fn postfix(tokens: &mut Vec<Token>) -> Node {
 
 fn unary(tokens: &mut Vec<Token>) -> Node {
     if consume(TK::OPE('*'), tokens) {
-        return Node{op: ND::DEREF, expr: Some(Box::new(mul(tokens))), ..Default::default()}
+        return new_expr(ND::DEREF, mul(tokens))
     } else if consume(TK::OPE('&'), tokens) {
-        return Node{op: ND::ADDR, expr: Some(Box::new(mul(tokens))), ..Default::default()}
+        return new_expr(ND::ADDR, mul(tokens))
     } else if consume(TK::SIZEOF, tokens) {
-        return Node{op: ND::SIZEOF, expr: Some(Box::new(unary(tokens))), ..Default::default()}
+        return new_expr(ND::SIZEOF, unary(tokens))
     } else {
         return postfix(tokens)
     }
@@ -92,7 +96,7 @@ fn mul(tokens: &mut Vec<Token>) -> Node {
         match token.ty {
             TK::OPE(o) => {
                 match o {
-                    '*' | '/' => lhs = new_node(ND::OPE(o), lhs, unary(tokens)),
+                    '*' | '/' => lhs = new_binop(ND::OPE(o), lhs, unary(tokens)),
                     _ => {
                         tokens.push(token);
                         break
@@ -115,7 +119,7 @@ fn add(tokens: &mut Vec<Token>) -> Node {
         match token.ty {
             TK::OPE(o) => {
                 match o {
-                    '+' | '-' => lhs = new_node(ND::OPE(o), lhs, mul(tokens)),
+                    '+' | '-' => lhs = new_binop(ND::OPE(o), lhs, mul(tokens)),
                     _ => {
                         tokens.push(token);
                         break
@@ -140,10 +144,10 @@ fn rel(tokens: &mut Vec<Token>) -> Node {
                 let op = t.clone().ty;
                 match op {
                     TK::OPE('<') => {
-                        lhs = new_node(ND::OPE('<'), lhs, add(tokens));
+                        lhs = new_binop(ND::OPE('<'), lhs, add(tokens));
                     },
                     TK::OPE('>') => {
-                        lhs = new_node(ND::OPE('<'), add(tokens), lhs);
+                        lhs = new_binop(ND::OPE('<'), add(tokens), lhs);
                     },
                     _ => {
                         tokens.push(t);
@@ -166,7 +170,7 @@ fn logand(tokens: &mut Vec<Token>) -> Node {
                 let op = t.clone().ty;
                 match op {
                     TK::LOGAND => {
-                        lhs = new_node(ND::LOGAND, lhs, rel(tokens));
+                        lhs = new_binop(ND::LOGAND, lhs, rel(tokens));
                     },                    _ => {
                         tokens.push(t);
                         break
@@ -188,7 +192,7 @@ fn logor(tokens: &mut Vec<Token>) -> Node {
                 let op = t.clone().ty;
                 match op {
                     TK::LOGOR => {
-                        lhs = new_node(ND::LOGOR, lhs, logand(tokens));
+                        lhs = new_binop(ND::LOGOR, lhs, logand(tokens));
                     },                    _ => {
                         tokens.push(t);
                         break
@@ -204,7 +208,7 @@ fn logor(tokens: &mut Vec<Token>) -> Node {
 fn assign(tokens: &mut Vec<Token>) -> Node {
     let lhs = logor(tokens);
     if consume(TK::OPE('='), tokens) {
-        return new_node(ND::OPE('='), lhs, logor(tokens));
+        return new_binop(ND::OPE('='), lhs, logor(tokens));
     } else {
         return lhs;
     }
@@ -261,7 +265,7 @@ fn param(tokens: &mut Vec<Token>) -> Node {
 }
 
 fn expr_stmt(tokens: &mut Vec<Token>) -> Node {
-    let node = Node { op: ND::EXPR_STMT, expr: Some(Box::new(assign(tokens))), ..Default::default()};
+    let node = new_expr(ND::EXPR_STMT, assign(tokens));
     expect(TK::END_LINE, tokens);
     return node;
 }
