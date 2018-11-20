@@ -53,10 +53,10 @@ impl IrGenerator {
             },
             ND::LVAR => {
                 let r = self.gen_lval(node.clone());
-                if node.ty.ty == TY::PTR {
-                    self.add(IRType::LOAD64, r, r);
-                } else {
-                    self.add(IRType::LOAD32, r, r);
+                match node.ty.ty {
+                    TY::CHAR => self.add(IRType::LOAD8, r, r),
+                    TY::INT => self.add(IRType::LOAD32, r, r),
+                    TY::PTR | TY::ARY => self.add(IRType::LOAD64, r, r),
                 }
                 return r
             },
@@ -117,10 +117,10 @@ impl IrGenerator {
             ND::OPE('=') => {
                 let rhs = self.gen_expr(*node.rhs.unwrap());
                 let lhs = self.gen_lval(*node.lhs.clone().unwrap());
-                if node.lhs.unwrap().ty.ty == TY::PTR {
-                    self.add(IRType::STORE64, lhs, rhs);
-                } else {
-                    self.add(IRType::STORE32, lhs, rhs);
+                match node.ty.ty {
+                    TY::CHAR => self.add(IRType::STORE8, lhs, rhs),
+                    TY::INT => self.add(IRType::STORE32, lhs, rhs),
+                    TY::PTR | TY::ARY =>  self.add(IRType::STORE64, lhs, rhs),
                 }
                 self.kill(rhs);
                 return lhs
@@ -232,8 +232,11 @@ impl IrGenerator {
             let name = node.val.clone();
             for i in 0..node.args.len() {
                 let arg = node.args[i].clone();
-                let op = if arg.ty.ty == TY::PTR { IRType::STORE64_ARG } else { IRType::STORE32_ARG };
-                self.add(op, arg.offset, i);
+                match arg.ty.ty {
+                    TY::CHAR => self.add(IRType::STORE8_ARG, arg.offset, i),
+                    TY::INT => self.add(IRType::STORE32_ARG, arg.offset, i),
+                    TY::PTR | TY::ARY => self.add(IRType::STORE64_ARG, arg.offset, i),
+                }
             }
             self.gen_stmt(*node.body.unwrap());
             funcs.push(Function{name, irs: self.code.clone(), stack_size: node.stack_size, ..Default::default()})

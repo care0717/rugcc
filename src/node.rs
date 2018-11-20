@@ -216,10 +216,11 @@ fn assign(tokens: &mut Vec<Token>) -> Node {
 
 fn get_type(tokens: &mut Vec<Token>) -> Type {
     let token = tokens.pop().unwrap();
-    if token.ty != TK::INT {
-        unreachable!("typename expected, but got {:?}", token.ty);
-    }
-    let mut ty = Type{..Default::default()};
+    let mut ty = match token.ty {
+        TK::INT => Type { ..Default::default() },
+        TK::CHAR => Type::new_char(),
+        _ => unreachable!("typename expected, but got {:?}", token.ty),
+    };
     while consume(TK::OPE('*'), tokens) {
         ty = ty.ptr_of();
     }
@@ -275,7 +276,7 @@ fn stmt(tokens: &mut Vec<Token>) -> Node {
     let mut node = Node { op: ND::EXPR_STMT, ..Default::default()};
 
     match token.ty {
-        TK::INT => {
+        TK::INT | TK::CHAR => {
             tokens.push(token);
             decl(tokens)
         },

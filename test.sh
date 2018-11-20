@@ -93,8 +93,12 @@ runtest 'int main() { int ary[3]; *ary=2; *(ary+1)=4; *(ary+2)=6; return *ary + 
 runtest 'int main() { int x; int *p = &x; x = 5; return *p+p[0];}' 10
 runtest 'int main() { int ary[2]; ary[0]=1; ary[1]=2; return ary[0] + ary[1];}' 3
 
+runtest 'int main() { char x; return sizeof x; }' 1
 runtest 'int main() { int x; return sizeof(x);}' 4
 runtest 'int main() { int *x; return sizeof x;}' 8
 runtest 'int main() { int ary[4]; return sizeof ary;}' 16
+
+runtest 'int main() { char x = 5; return x; }' 5
+runtest 'int main() { int x = 0; char *p = &x; p[0] = 42; return x; }' 42
 
 echo "OK"

@@ -5,6 +5,8 @@ use {REGS, REGS8, REGS32};
 
 static ARGREG64: [&str; 6] = ["rdi", "rsi", "rdx", "rcx", "r8", "r9"];
 static ARGREG32: [&str; 6] = ["edi", "esi", "edx", "ecx", "r8d", "r9d"];
+static ARGREG8: [&str; 6] = ["dil", "sil", "dl", "cl", "r8b", "r9b"];
+
 
 fn gen(func: Function, label: usize) {
     let ret = format!(".Lend{}", label);
@@ -58,6 +60,9 @@ fn gen(func: Function, label: usize) {
                 print!("\tpop r10\n");
                 print!("\tmov {}, rax\n", REGS[ir.lhs]);
             },
+            IRType::STORE8_ARG => {
+                print!("\tmov [rbp-{}], {}\n", ir.lhs, ARGREG8[ir.rhs]);
+            },
             IRType::STORE32_ARG => {
                 print!("\tmov [rbp-{}], {}\n", ir.lhs, ARGREG32[ir.rhs]);
             },
@@ -77,11 +82,17 @@ fn gen(func: Function, label: usize) {
             IRType::JMP => {
                 print!("\tjmp .L{}\n", ir.lhs);
             },
+            IRType::LOAD8 => {
+                print!("\tmov {}, [{}]\n", REGS8[ir.lhs], REGS[ir.rhs]);
+            },
             IRType::LOAD32 => {
                 print!("\tmov {}, [{}]\n", REGS32[ir.lhs], REGS[ir.rhs]);
             },
             IRType::LOAD64 => {
                 print!("\tmov {}, [{}]\n", REGS[ir.lhs], REGS[ir.rhs]);
+            },
+            IRType::STORE8 => {
+                print!("\tmov [{}], {}\n", REGS[ir.lhs], REGS8[ir.rhs]);
             },
             IRType::STORE32 => {
                 print!("\tmov [{}], {}\n", REGS[ir.lhs], REGS32[ir.rhs]);

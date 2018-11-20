@@ -8,6 +8,7 @@ pub mod common {
         IDENT,
         SIZEOF,
         INT,
+        CHAR,
         IF,
         ELSE,
         LOGOR,
@@ -26,6 +27,7 @@ pub mod common {
     #[derive(PartialEq, Debug, Clone)]
     pub enum TY {
         INT,
+        CHAR,
         PTR,
         ARY,
     }
@@ -42,11 +44,15 @@ pub mod common {
         }
     }
     impl Type {
+        pub fn new_char() -> Type {
+            return Type {ty: TY::CHAR, ..Default::default()}
+        }
         pub fn size_of(&self) -> usize {
             match self.ty {
                 TY::INT => return 4,
                 TY::ARY => return self.ary_of.clone().unwrap().size_of() * self.len,
                 TY::PTR => return 8,
+                TY::CHAR => return 1,
             }
         }
         pub fn ary_of(&self, len: usize) -> Type {
@@ -141,10 +147,13 @@ pub mod common {
         MOV,
         LABEL,
         UNLESS,
+        LOAD8,
         LOAD32,
         LOAD64,
+        STORE8,
         STORE32,
         STORE64,
+        STORE8_ARG,
         STORE32_ARG,
         STORE64_ARG,
         RETURN,
@@ -220,7 +229,7 @@ pub mod common {
         pub ty: IRInfoType,
     }
 
-    const IRINFO: [IRInfo; 21] = [
+    const IRINFO: [IRInfo; 24] = [
         IRInfo{op: IRType::ADD, name: "ADD", ty: IRInfoType::REG_REG},
         IRInfo{op: IRType::SUB, name: "SUB", ty: IRInfoType::REG_REG},
         IRInfo{op: IRType::MUL, name: "MUL", ty: IRInfoType::REG_REG},
@@ -231,10 +240,13 @@ pub mod common {
         IRInfo{op: IRType::LABEL, name: "", ty: IRInfoType::LABEL},
         IRInfo{op: IRType::UNLESS, name: "UNLESS", ty: IRInfoType::REG_LABEL},
         IRInfo{op: IRType::RETURN, name: "RET", ty: IRInfoType::REG},
+        IRInfo{op: IRType::LOAD8, name: "LOAD8", ty: IRInfoType::REG_REG},
         IRInfo{op: IRType::LOAD32, name: "LOAD32", ty: IRInfoType::REG_REG},
         IRInfo{op: IRType::LOAD64, name: "LOAD64", ty: IRInfoType::REG_REG},
+        IRInfo{op: IRType::STORE8, name: "STORE8", ty: IRInfoType::REG_REG},
         IRInfo{op: IRType::STORE32, name: "STORE32", ty: IRInfoType::REG_REG},
         IRInfo{op: IRType::STORE64, name: "STORE32", ty: IRInfoType::REG_REG},
+        IRInfo{op: IRType::STORE8_ARG, name: "STORE8_ARG", ty: IRInfoType::IMM_IMM},
         IRInfo{op: IRType::STORE32_ARG, name: "STORE32_ARG", ty: IRInfoType::IMM_IMM},
         IRInfo{op: IRType::STORE64_ARG, name: "STORE64_ARG", ty: IRInfoType::IMM_IMM},
         IRInfo{op: IRType::LT, name: "LT", ty: IRInfoType::REG_REG},
