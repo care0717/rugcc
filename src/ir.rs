@@ -21,18 +21,24 @@ impl IrGenerator {
     fn label(&mut self, x: usize) { self.add(IRType::LABEL, x, 0); }
 
     fn gen_lval(&mut self, node: Node) -> usize {
-        if node.op == ND::DEREF {
-            return self.gen_expr(*node.expr.unwrap())
-        }
-        if node.op != ND::LVAR {
-            unreachable!("not an lvalue: {:?} ({})", node.op, node.val);
-        }
-        let r = self.regno;
-        self.regno += 1;
+        match node.op {
+            ND::DEREF => return self.gen_expr(*node.expr.unwrap()),
+            ND::LVAR => {
+                let r = self.regno;
+                self.regno += 1;
 
-        self.add(IRType::MOV, r, 0);
-        self.add(IRType::SUB_IMM, r, node.offset);
-        return r;
+                self.add(IRType::MOV, r, 0);
+                self.add(IRType::SUB_IMM, r, node.offset);
+                return r
+            },
+            ND::GVAR => {
+                let r = self.regno;
+                self.regno += 1;
+                self.code.push(IR{op: IRType::LABEL_ADDR, lhs: r, rhs: 0, name: node.val, ..Default::default() });
+                return r
+            },
+            _ => unreachable!("unexpected node type:{:?}", node.op),
+        }
     }
 
     fn gen_binop(&mut self, ty: IRType, lhs: Node, rhs: Node) -> usize {
@@ -51,7 +57,7 @@ impl IrGenerator {
                 self.add(IRType::IMM, r, node.val.parse::<usize>().unwrap());
                 return r
             },
-            ND::LVAR => {
+            ND::LVAR | ND::GVAR => {
                 let r = self.gen_lval(node.clone());
                 match node.ty.ty {
                     TY::CHAR => self.add(IRType::LOAD8, r, r),
@@ -110,8 +116,12 @@ impl IrGenerator {
             },
             ND::ADDR => return self.gen_lval(*node.expr.unwrap()),
             ND::DEREF => {
-                let r = self.gen_expr(*node.expr.unwrap());
-                self.add(IRType::LOAD64, r, r);
+                let r = self.gen_expr(*node.expr.clone().unwrap());
+                match node.expr.unwrap().ty.ty {
+                    TY::CHAR => self.add(IRType::LOAD8, r, r),
+                    TY::INT => self.add(IRType::LOAD32, r, r),
+                    TY::PTR | TY::ARY => self.add(IRType::LOAD64, r, r),
+                }
                 return r
             },
             ND::OPE('=') => {
@@ -146,7 +156,7 @@ impl IrGenerator {
             },
             ND::OPE('*') => return self.gen_binop(IRType::MUL, *node.lhs.unwrap(), *node.rhs.unwrap()),
             ND::OPE('/') => return self.gen_binop(IRType::DIV, *node.lhs.unwrap(), *node.rhs.unwrap()),
-            _ => { unreachable!("unexpected node type:{:?}", node.op)}
+            _ => unreachable!("unexpected node type:{:?}", node.op),
         }
     }
 
@@ -239,7 +249,7 @@ impl IrGenerator {
                 }
             }
             self.gen_stmt(*node.body.unwrap());
-            funcs.push(Function{name, irs: self.code.clone(), stack_size: node.stack_size, ..Default::default()})
+            funcs.push(Function{name, irs: self.code.clone(), stack_size: node.stack_size, strings: node.strings, ..Default::default()})
         }
         return funcs
     }
@@ -315,7 +325,8 @@ mod tests {
                     IR { op: IRType::KILL, lhs: 5, ..Default::default() },
                     IR { op: IRType::RETURN, lhs: 1, ..Default::default() },
                     IR { op: IRType::KILL, lhs: 1, ..Default::default() }].to_vec(),
-                stack_size: 0 }];
+                stack_size: 0,
+                strings: Vec::new() }];
 
         assert_eq!(result.len(), expect.len());
         for i in 0..result.len() {
@@ -388,7 +399,8 @@ mod tests {
                     IR { op: IRType::KILL, lhs: 2, rhs: 0, ..Default::default() },
                     IR { op: IRType::RETURN, lhs: 1, rhs: 0, ..Default::default() },
                     IR { op: IRType::KILL, lhs: 1, rhs: 0, ..Default::default() }].to_vec(),
-                stack_size: 8 },
+                stack_size: 8,
+                strings: Vec::new() },
             Function {
                 name: "main".to_string(),
                 irs: [
@@ -399,7 +411,8 @@ mod tests {
                     IR { op: IRType::KILL, lhs: 2, rhs: 0, ..Default::default() },
                     IR { op: IRType::RETURN, lhs: 3, rhs: 0, ..Default::default() },
                     IR { op: IRType::KILL, lhs: 3, rhs: 0, ..Default::default() }].to_vec(),
-                stack_size: 0 }];
+                stack_size: 0,
+                strings: Vec::new() }];
 
         assert_eq!(result.len(), expect.len());
         for i in 0..result.len() {
@@ -546,7 +559,8 @@ mod tests {
                     IR { op: IRType::KILL, lhs: 10, rhs: 0, ..Default::default() },
                     IR { op: IRType::RETURN, lhs: 7, rhs: 0, ..Default::default() },
                     IR { op: IRType::KILL, lhs: 7, rhs: 0, ..Default::default() }].to_vec(),
-                stack_size: 8 }];
+                stack_size: 8,
+                strings: Vec::new()}];
 
         assert_eq!(result.len(), expect.len());
         for i in 0..result.len() {

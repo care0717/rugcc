@@ -11,11 +11,13 @@ struct Var {
 pub struct SemaGenerator {
     vars: HashMap<String, Var>,
     stack_size: usize,
+    strings: Vec<Node>,
+    str_label: usize,
 }
 
 impl SemaGenerator {
     pub fn new() -> SemaGenerator {
-        SemaGenerator{vars: HashMap::new(), stack_size: 0}
+        SemaGenerator{vars: HashMap::new(), stack_size: 0, strings: Vec::new(), str_label: 0}
     }
 
     fn swap(&self, p: Option<Box<Node>>, q: Option<Box<Node>>) -> (Option<Box<Node>>, Option<Box<Node>>){
@@ -24,18 +26,31 @@ impl SemaGenerator {
 
     fn walk(&mut self, mut node: Node, decay: bool) -> Node {
         match node.op {
-            ND::NUM => { return node},
+            ND::NUM => return node,
+            ND::STR => {
+                let name = format!(".L.str{}", self.str_label);
+                self.str_label += 1;
+                node.val = name;
+                self.strings.push(node.clone());
+                return self.walk(Node{op: ND::GVAR, ty: node.ty, val: node.val, ..Default::default()}, decay)
+            },
             ND::IDENT => {
                 if self.vars.get(&node.val.to_string()).is_none() {
                     unreachable!("undefined variable: {}", node.val);
                 }
                 node.op = ND::LVAR;
-                let var = self.vars.get(&node.val).unwrap().clone();
+                let var: Var = self.vars.get(&node.val).unwrap().clone();
                 node.offset = var.offset;
                 if decay && var.ty.ty == TY::ARY {
                     node = node.addr_of(*var.ty.ary_of.unwrap());
                 } else {
                     node.ty = var.ty;
+                }
+                return node
+            },
+            ND::GVAR => {
+                if decay && node.ty.ty == TY::ARY {
+                    return node.clone().addr_of(*node.ty.ary_of.unwrap())
                 }
                 return node
             },
@@ -141,8 +156,10 @@ impl SemaGenerator {
             assert!(node.op == ND::FUNC);
             self.vars = HashMap::new();
             self.stack_size = 0;
+            self.strings = Vec::new();
             node = self.walk(node, true);
             node.stack_size = self.stack_size;
+            node.strings = self.strings.clone();
             res.push(node);
         }
         return res

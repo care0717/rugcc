@@ -9,6 +9,7 @@ pub mod common {
         SIZEOF,
         INT,
         CHAR,
+        STR,
         IF,
         ELSE,
         LOGOR,
@@ -21,6 +22,10 @@ pub mod common {
     pub struct Token {
         pub ty: TK,
         pub val: String,
+        pub str: String,
+    }
+    impl Default for Token {
+        fn default() -> Self { Token{ty: TK::INT, val: String::new(), str: String::new()} }
     }
 
 
@@ -66,9 +71,11 @@ pub mod common {
     #[derive(PartialEq, Debug, Clone)]
     pub enum ND {
         NUM,
+        STR,
         IDENT,
         VARDEF,
-        LVAR,
+        LVAR,      // Local variable reference
+        GVAR,      // Global variable reference
         DEREF,     // pointer dereference ("*")
         ADDR,
         SIZEOF,
@@ -101,6 +108,8 @@ pub mod common {
         pub inc: Option<Box<Node>>,
         pub args: Vec<Node>,
         pub body: Option<Box<Node>>,
+        pub strings: Vec<Node>,
+        pub str: String,
         // Function definition
         pub stack_size: usize,
         // Local variable
@@ -110,7 +119,7 @@ pub mod common {
         fn default() -> Self {
             Self { op: ND::NUM, ty: Type{..Default::default()}, lhs: None, rhs: None, val: String::new(), expr: None,
                 cond: None, then: None, els: None, init: None, inc: None, stmts: Vec::new(),
-                args: Vec::new(), body: None, stack_size: 0, offset: 0}
+                args: Vec::new(), body: None, strings: Vec::new(), str: String::new(), stack_size: 0, offset: 0}
         }
     }
     impl Node {
@@ -131,12 +140,13 @@ pub mod common {
     #[derive(PartialEq, Debug, Clone)]
     pub struct Function {
         pub name: String,
+        pub strings: Vec<Node>,
         pub irs: Vec<IR>,
         pub stack_size: usize,
     }
     impl Default for Function {
         fn default() -> Self {
-            Self { name: String::new(), irs: Vec::new(), stack_size: 0 }
+            Self { name: String::new(), strings: Vec::new(), irs: Vec::new(), stack_size: 0 }
         }
     }
 
@@ -146,6 +156,7 @@ pub mod common {
         SUB_IMM,
         MOV,
         LABEL,
+        LABEL_ADDR,
         UNLESS,
         LOAD8,
         LOAD32,
@@ -195,6 +206,7 @@ pub mod common {
             let info = self.get_irinfo();
             match info.ty {
                 IRInfoType::LABEL => return format!(".L{}:", self.lhs),
+                IRInfoType::LABEL_ADDR => return format!("{} r{}, {}", info.name, self.lhs, self.name),
                 IRInfoType::REG => return format!("{} r{}", info.name, self.lhs),
                 IRInfoType::REG_REG => return format!("{} r{}, r{}", info.name, self.lhs, self.rhs),
                 IRInfoType::REG_IMN => return format!("{} r{}, {}", info.name, self.lhs, self.rhs),
@@ -213,6 +225,7 @@ pub mod common {
         NOARG,
         REG,
         LABEL,
+        LABEL_ADDR,
         REG_REG,
         REG_IMN,
         REG_LABEL,
@@ -229,7 +242,7 @@ pub mod common {
         pub ty: IRInfoType,
     }
 
-    const IRINFO: [IRInfo; 24] = [
+    const IRINFO: [IRInfo; 25] = [
         IRInfo{op: IRType::ADD, name: "ADD", ty: IRInfoType::REG_REG},
         IRInfo{op: IRType::SUB, name: "SUB", ty: IRInfoType::REG_REG},
         IRInfo{op: IRType::MUL, name: "MUL", ty: IRInfoType::REG_REG},
@@ -238,6 +251,7 @@ pub mod common {
         IRInfo{op: IRType::SUB_IMM, name: "SUB", ty: IRInfoType::REG_IMN},
         IRInfo{op: IRType::MOV, name: "MOV", ty: IRInfoType::REG_REG},
         IRInfo{op: IRType::LABEL, name: "", ty: IRInfoType::LABEL},
+        IRInfo{op: IRType::LABEL_ADDR, name: "", ty: IRInfoType::LABEL_ADDR},
         IRInfo{op: IRType::UNLESS, name: "UNLESS", ty: IRInfoType::REG_LABEL},
         IRInfo{op: IRType::RETURN, name: "RET", ty: IRInfoType::REG},
         IRInfo{op: IRType::LOAD8, name: "LOAD8", ty: IRInfoType::REG_REG},

@@ -26,7 +26,7 @@ fn visit(irs: &mut Vec<IR>, reg_map: &mut Vec<i32>, used: &mut Vec<bool>) {
         let info = ir.get_irinfo();
         //eprintln!("{:?}", info);
         match info.ty {
-            IRInfoType::REG | IRInfoType::REG_IMN | IRInfoType::REG_LABEL => {
+            IRInfoType::REG | IRInfoType::REG_IMN | IRInfoType::REG_LABEL | IRInfoType::LABEL_ADDR => {
                 irs[i].lhs = alloc(ir.lhs,  reg_map,  used);
             },
             IRInfoType::REG_REG  => {
@@ -93,7 +93,8 @@ mod tests {
                     IR { op: IRType::KILL, lhs: 5, ..Default::default() },
                     IR { op: IRType::RETURN, lhs: 1, ..Default::default() },
                     IR { op: IRType::KILL, lhs: 1, ..Default::default() }].to_vec(),
-                stack_size: 0 }].to_vec();
+                stack_size: 0,
+                strings: Vec::new() }].to_vec();
 
         alloc_regs(&mut input);
 
@@ -116,7 +117,8 @@ mod tests {
                     IR { op: IRType::NOP, lhs: 5, ..Default::default() },
                     IR { op: IRType::RETURN, lhs: 1, ..Default::default() },
                     IR { op: IRType::NOP, lhs: 1, ..Default::default() }].to_vec(),
-                stack_size: 0 }];
+                stack_size: 0,
+                strings: Vec::new() }];
 
         assert_eq!(input.len(), expect.len());
         for i in 0..input.len() {

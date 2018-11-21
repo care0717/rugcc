@@ -101,4 +101,9 @@ runtest 'int main() { int ary[4]; return sizeof ary;}' 16
 runtest 'int main() { char x = 5; return x; }' 5
 runtest 'int main() { int x = 0; char *p = &x; p[0] = 42; return x; }' 42
 
+runtest 'int main() { char *p = "abc"; return p[0]; }' 97
+runtest 'int main() { char *p = "abc"; return p[1]; }' 98
+runtest 'int main() { char *p = "abc"; return p[1+1]; }' 99
+runtest 'int main() { char *p = "abc"; return p[3]; }' 0
+
 echo "OK"

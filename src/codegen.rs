@@ -1,5 +1,5 @@
 extern crate rugcc;
-use self::rugcc::common::{IRType, Function};
+use self::rugcc::common::{ND, IRType, Function};
 use {REGS, REGS8, REGS32};
 
 
@@ -9,115 +9,129 @@ static ARGREG8: [&str; 6] = ["dil", "sil", "dl", "cl", "r8b", "r9b"];
 
 
 fn gen(func: Function, label: usize) {
+    println!(".data");
+    for node in func.strings {
+        if node.op == ND::STR {
+            println!("{}:", node.val);
+            println!("\t.asciz \"{}\"", node.str);
+        } else {
+            unreachable!("ND::STR expected but got: {:?}", node.op);
+        }
+    }
+
+
     let ret = format!(".Lend{}", label);
-    print!(".global _{}\n", func.name);
-    print!("_{}:\n", func.name);
-    print!("\tpush rbp\n");
-    print!("\tmov rbp, rsp\n");
-    print!("\tsub rsp, {}\n", func.stack_size);
-    print!("\tpush r12\n");
-    print!("\tpush r13\n");
-    print!("\tpush r14\n");
-    print!("\tpush r15\n");
+    println!(".text");
+    println!(".global _{}", func.name);
+    println!("_{}:", func.name);
+    println!("\tpush rbp");
+    println!("\tmov rbp, rsp");
+    println!("\tsub rsp, {}", func.stack_size);
+    println!("\tpush r12");
+    println!("\tpush r13");
+    println!("\tpush r14");
+    println!("\tpush r15");
 
     for ir in func.irs {
         match ir.op {
             IRType::IMM => {
-                print!("\tmov {}, {}\n", REGS[ir.lhs], ir.rhs);
+                println!("\tmov {}, {}", REGS[ir.lhs], ir.rhs);
             }
             IRType::MOV => {
-                print!("\tmov {}, {}\n", REGS[ir.lhs], REGS[ir.rhs]);
+                println!("\tmov {}, {}", REGS[ir.lhs], REGS[ir.rhs]);
             },
             IRType::SUB_IMM => {
-                print!("\tsub {}, {}\n", REGS[ir.lhs], ir.rhs);
+                println!("\tsub {}, {}", REGS[ir.lhs], ir.rhs);
             }
             IRType::RETURN => {
-                print!("\tmov rax, {}\n", REGS[ir.lhs]);
-                print!("\tjmp {}\n", ret);
+                println!("\tmov rax, {}", REGS[ir.lhs]);
+                println!("\tjmp {}", ret);
             },
-            IRType::ADD => print!("\tadd {}, {}\n", REGS[ir.lhs], REGS[ir.rhs]),
-            IRType::SUB => print!("\tsub {}, {}\n", REGS[ir.lhs], REGS[ir.rhs]),
+            IRType::ADD => println!("\tadd {}, {}", REGS[ir.lhs], REGS[ir.rhs]),
+            IRType::SUB => println!("\tsub {}, {}", REGS[ir.lhs], REGS[ir.rhs]),
             IRType::MUL => {
-                print!("\tmov rax, {}\n", REGS[ir.rhs]);
-                print!("\tmul {}\n", REGS[ir.lhs]);
-                print!("\tmov {}, rax\n", REGS[ir.lhs]);
+                println!("\tmov rax, {}", REGS[ir.rhs]);
+                println!("\tmul {}", REGS[ir.lhs]);
+                println!("\tmov {}, rax", REGS[ir.lhs]);
             },
             IRType::DIV => {
-                print!("\tmov rax, {}\n", REGS[ir.lhs]);
-                print!("\tcqo\n");
-                print!("\tdiv {}\n", REGS[ir.rhs]);
-                print!("\tmov {}, rax\n", REGS[ir.lhs]);
+                println!("\tmov rax, {}", REGS[ir.lhs]);
+                println!("\tcqo");
+                println!("\tdiv {}", REGS[ir.rhs]);
+                println!("\tmov {}, rax", REGS[ir.lhs]);
             },
             IRType::CALL => {
                 for i in 0..ir.args.clone().len(){
-                    print!("\tmov {}, {}\n", ARGREG64[i], REGS[ir.args[i]]);
+                    println!("\tmov {}, {}", ARGREG64[i], REGS[ir.args[i]]);
                 }
-                print!("\tpush r10\n");
-                print!("\tpush r11\n");
-                print!("\tmov rax, 0\n");
-                print!("\tcall _{}\n", ir.name);
-                print!("\tpop r11\n");
-                print!("\tpop r10\n");
-                print!("\tmov {}, rax\n", REGS[ir.lhs]);
+                println!("\tpush r10");
+                println!("\tpush r11");
+                println!("\tmov rax, 0");
+                println!("\tcall _{}", ir.name);
+                println!("\tpop r11");
+                println!("\tpop r10");
+                println!("\tmov {}, rax", REGS[ir.lhs]);
             },
             IRType::STORE8_ARG => {
-                print!("\tmov [rbp-{}], {}\n", ir.lhs, ARGREG8[ir.rhs]);
+                println!("\tmov [rbp-{}], {}", ir.lhs, ARGREG8[ir.rhs]);
             },
             IRType::STORE32_ARG => {
-                print!("\tmov [rbp-{}], {}\n", ir.lhs, ARGREG32[ir.rhs]);
+                println!("\tmov [rbp-{}], {}", ir.lhs, ARGREG32[ir.rhs]);
             },
             IRType::STORE64_ARG => {
-                print!("\tmov [rbp-{}], {}\n", ir.lhs, ARGREG64[ir.rhs]);
+                println!("\tmov [rbp-{}], {}", ir.lhs, ARGREG64[ir.rhs]);
             },
             IRType::LT => {
-                print!("\tcmp {}, {}\n", REGS[ir.lhs], REGS[ir.rhs]);
-                print!("\tsetl {}\n", REGS8[ir.lhs]);
-                print!("\tmovzx {}, {}\n", REGS[ir.lhs], REGS8[ir.lhs]);
+                println!("\tcmp {}, {}", REGS[ir.lhs], REGS[ir.rhs]);
+                println!("\tsetl {}", REGS8[ir.lhs]);
+                println!("\tmovzx {}, {}", REGS[ir.lhs], REGS8[ir.lhs]);
             }
-            IRType::LABEL => print!(".L{}:\n", ir.lhs),
+            IRType::LABEL => println!(".L{}:", ir.lhs),
+            IRType::LABEL_ADDR => println!("\tlea {}, [rip + {}]", REGS[ir.lhs], ir.name),
             IRType::UNLESS => {
-                print!("\tcmp {}, 0\n", REGS[ir.lhs]);
-                print!("\tje .L{}\n", ir.rhs);
+                println!("\tcmp {}, 0", REGS[ir.lhs]);
+                println!("\tje .L{}", ir.rhs);
             },
             IRType::JMP => {
-                print!("\tjmp .L{}\n", ir.lhs);
+                println!("\tjmp .L{}", ir.lhs);
             },
             IRType::LOAD8 => {
-                print!("\tmov {}, [{}]\n", REGS8[ir.lhs], REGS[ir.rhs]);
+                println!("\tmov {}, [{}]", REGS8[ir.lhs], REGS[ir.rhs]);
+                println!("\tmovzx {}, {}", REGS[ir.lhs], REGS8[ir.lhs]);
             },
             IRType::LOAD32 => {
-                print!("\tmov {}, [{}]\n", REGS32[ir.lhs], REGS[ir.rhs]);
+                println!("\tmov {}, [{}]", REGS32[ir.lhs], REGS[ir.rhs]);
             },
             IRType::LOAD64 => {
-                print!("\tmov {}, [{}]\n", REGS[ir.lhs], REGS[ir.rhs]);
+                println!("\tmov {}, [{}]", REGS[ir.lhs], REGS[ir.rhs]);
             },
             IRType::STORE8 => {
-                print!("\tmov [{}], {}\n", REGS[ir.lhs], REGS8[ir.rhs]);
+                println!("\tmov [{}], {}", REGS[ir.lhs], REGS8[ir.rhs]);
             },
             IRType::STORE32 => {
-                print!("\tmov [{}], {}\n", REGS[ir.lhs], REGS32[ir.rhs]);
+                println!("\tmov [{}], {}", REGS[ir.lhs], REGS32[ir.rhs]);
             },
             IRType::STORE64 => {
-                print!("\tmov [{}], {}\n", REGS[ir.lhs], REGS[ir.rhs]);
+                println!("\tmov [{}], {}", REGS[ir.lhs], REGS[ir.rhs]);
             },
             IRType::NOP => {},
             IRType::KILL => unreachable!("unexpected IRType KILL"),
         }
     }
 
-    print!("{}:\n", ret);
-    print!("\tpop r15\n");
-    print!("\tpop r14\n");
-    print!("\tpop r13\n");
-    print!("\tpop r12\n");
-    print!("\tmov rsp, rbp\n");
-    print!("\tpop rbp\n");
-    print!("\tret\n");
+    println!("{}:", ret);
+    println!("\tpop r15");
+    println!("\tpop r14");
+    println!("\tpop r13");
+    println!("\tpop r12");
+    println!("\tmov rsp, rbp");
+    println!("\tpop rbp");
+    println!("\tret");
 
 }
 
 pub fn gen_x86(fns: Vec<Function>){
-    print!(".intel_syntax noprefix\n");
+    println!(".intel_syntax noprefix");
     let mut label = 0;
     for f in fns{
         gen(f, label);
