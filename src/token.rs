@@ -9,7 +9,7 @@ pub fn tokenize(s: Vec<char>) -> Vec<Token>{
     let size = s.len();
     while counter < size {
         let c = s[counter];
-        if c.is_whitespace() {
+        if c.is_whitespace() || c == '\n' {
             counter += 1;
             continue;
         }

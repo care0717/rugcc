@@ -9,6 +9,8 @@ C compiler made by Rust
 cargo build
 # Please enter: ./target/debug/rugcc <your code>. It generates assembly.
 ./target/debug/rugcc 'int main() { int a; int b; a=2; b=5+1; return a*b; }'
+# or
+./target/debug/rugcc "`cat ./examples/hello.c`"
 ```
 Please see example in `test.sh`
 
